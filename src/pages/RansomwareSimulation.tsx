@@ -1,11 +1,10 @@
-
 import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { FileSearch, Play, Pause, RotateCcw, AlertTriangle, Server, Shield, Network, Database, Laptop, Virus } from "lucide-react";
+import { FileSearch, Play, Pause, RotateCcw, AlertTriangle, Server, Shield, Network, Database, Laptop, Bug } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { ImprovedThreatMap } from "@/components/ImprovedThreatMap";
@@ -494,7 +493,7 @@ export default function RansomwareSimulation() {
                                   animationDelay: `${Math.random() * 2}s`
                                 }}
                               >
-                                <Virus className="h-4 w-4 text-red-500" />
+                                <Bug className="h-4 w-4 text-red-500" />
                               </div>
                             ))}
                           </div>
@@ -546,7 +545,7 @@ export default function RansomwareSimulation() {
                                 }`}
                               >
                                 {affectedNodes.includes(node) ? (
-                                  <Virus className="h-3 w-3" />
+                                  <Bug className="h-3 w-3" />
                                 ) : (
                                   <Shield className="h-3 w-3" />
                                 )}
@@ -723,52 +722,4 @@ export default function RansomwareSimulation() {
                         <p>Analyze the ransomware sample in a sandbox environment to understand its behavior and identify indicators of compromise.</p>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
-                      </CardFooter>
-                    </Card>
-                    
-                    <Card className="bg-cyber-background/30">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Incident Response</CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-xs text-cyber-muted">
-                        <p>Follow structured incident response procedures to contain, eradicate, and recover from the ransomware attack.</p>
-                      </CardContent>
-                      <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
-                      </CardFooter>
-                    </Card>
-                    
-                    <Card className="bg-cyber-background/30">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">System Isolation</CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-xs text-cyber-muted">
-                        <p>Isolate infected systems from the network to prevent further spread of the ransomware.</p>
-                      </CardContent>
-                      <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
-                      </CardFooter>
-                    </Card>
-                    
-                    <Card className="bg-cyber-background/30">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm">Forensic Investigation</CardTitle>
-                      </CardHeader>
-                      <CardContent className="text-xs text-cyber-muted">
-                        <p>Conduct digital forensics to determine the initial infection vector and develop attribution if possible.</p>
-                      </CardContent>
-                      <CardFooter>
-                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
-                      </CardFooter>
-                    </Card>
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
-          </Tabs>
-        </main>
-      </div>
-    </div>
-  );
-}
+                        <Button variant="outline" size="
