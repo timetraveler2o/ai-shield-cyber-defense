@@ -16,6 +16,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
 
 const deepfakeTypeData = [
   { name: "Face Swap", value: 145, fill: "#9b87f5" },
