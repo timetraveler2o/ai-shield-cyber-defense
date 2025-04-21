@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -14,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Trash2, Edit, UserPlus, Search, BarChart4, Upload } from "lucide-react";
-import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
@@ -23,9 +22,9 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/components/ui/use-toast";
 
 interface Person {
   id: string;
@@ -37,7 +36,7 @@ interface Person {
 }
 
 export default function FaceDatabase() {
-  const { toast } = useToast();
+  const { toast: useToastHook } = useToast();
   const [people, setPeople] = useState<Person[]>([
     {
       id: "1",
@@ -80,22 +79,24 @@ export default function FaceDatabase() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
 
-  // Function to upload image to supabase storage and return public URL
+  // Updated function to upload image to supabase storage
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       setUploadingImage(true);
       setUploadProgress(0);
+      
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
       
-      // Create an upload event handler separate from the options
-      const uploadEventHandler = (progress: number, uploadedBytes: number, totalBytes: number) => {
-        const percentage = Math.round((uploadedBytes * 100) / totalBytes);
-        setUploadProgress(percentage);
-      };
+      // Simulate progress for better user experience
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev && prev < 90) return prev + 10;
+          return prev;
+        });
+      }, 300);
       
-      // Add event listener to the upload
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
@@ -103,18 +104,20 @@ export default function FaceDatabase() {
           upsert: false,
         });
         
+      clearInterval(progressInterval);
+      
       if (error) {
-        toast({
+        useToastHook({
           title: "Upload Error",
           description: error.message,
           variant: "destructive",
         });
+        console.error("Upload error:", error);
         setUploadingImage(false);
         setUploadProgress(null);
         return null;
       }
       
-      // Since we can't track progress directly, simulate progress completion
       setUploadProgress(100);
       
       if (data) {
@@ -122,12 +125,14 @@ export default function FaceDatabase() {
         const { data: publicUrlData } = supabase.storage
           .from("face-database-images")
           .getPublicUrl(filePath);
+          
         setUploadingImage(false);
         setUploadProgress(null);
+        
         if (publicUrlData?.publicUrl) {
           return publicUrlData.publicUrl;
         } else {
-          toast({
+          useToastHook({
             title: "Error",
             description: "Could not get public URL for image",
             variant: "destructive",
@@ -137,7 +142,8 @@ export default function FaceDatabase() {
       }
       return null;
     } catch (err) {
-      toast({
+      console.error("Unexpected upload error:", err);
+      useToastHook({
         title: "Unexpected Error",
         description: "Error uploading image",
         variant: "destructive",
@@ -160,7 +166,7 @@ export default function FaceDatabase() {
     const url = await uploadImage(file);
     if (url) {
       setNewPerson({ ...newPerson, imageUrl: url });
-      toast({
+      useToastHook({
         title: "Image uploaded",
         description: "Image uploaded successfully.",
       });
@@ -169,7 +175,7 @@ export default function FaceDatabase() {
 
   const handleAddPerson = () => {
     if (!newPerson.name || !newPerson.crime) {
-      toast({
+      useToastHook({
         title: "Invalid input",
         description: "Please fill all required fields",
         variant: "destructive",
@@ -196,7 +202,7 @@ export default function FaceDatabase() {
       imageUrl: "",
     });
 
-    toast({
+    useToastHook({
       title: "Person added",
       description: `${person.name} has been added to the database`,
     });
@@ -232,7 +238,7 @@ export default function FaceDatabase() {
       imageUrl: "",
     });
 
-    toast({
+    useToastHook({
       title: "Person updated",
       description: "The record has been updated successfully",
     });
@@ -250,7 +256,7 @@ export default function FaceDatabase() {
     setDeleteDialogOpen(false);
     setPersonToDelete(null);
 
-    toast({
+    useToastHook({
       title: "Person deleted",
       description: "The record has been deleted from the database",
     });
