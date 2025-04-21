@@ -14,6 +14,8 @@ import {
   ChevronLeft,
   ChevronRight,
   User,
+  FileText,
+  UserCheck
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -65,6 +67,16 @@ const menuItems = [
     title: "SIM Fraud Detection",
     icon: ShieldCheck,
     path: "/sim-fraud",
+  },
+  {
+    title: "Face Database",
+    icon: UserCheck,
+    path: "/face-database",
+  },
+  {
+    title: "Crime Report",
+    icon: FileText,
+    path: "/crime-report",
   },
   {
     title: "Profile",

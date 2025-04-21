@@ -13,6 +13,8 @@ import DeepfakeDetection from "./pages/DeepfakeDetection";
 import VoIPAnalysis from "./pages/VoIPAnalysis";
 import UPIMonitoring from "./pages/UPIMonitoring";
 import SIMFraudDetection from "./pages/SIMFraudDetection";
+import FaceDatabase from "./pages/FaceDatabase";
+import CrimeReport from "./pages/CrimeReport";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
@@ -35,6 +37,8 @@ const App = () => (
           <Route path="/voip" element={<VoIPAnalysis />} />
           <Route path="/upi" element={<UPIMonitoring />} />
           <Route path="/sim-fraud" element={<SIMFraudDetection />} />
+          <Route path="/face-database" element={<FaceDatabase />} />
+          <Route path="/crime-report" element={<CrimeReport />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/profile" element={<Profile />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

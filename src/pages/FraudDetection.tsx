@@ -6,6 +6,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
 import { AlertTriangle, CheckCircle, AlertCircle, Bell } from "lucide-react";
 import { StatisticsChart } from "@/components/StatisticsChart";
+import { FraudChecker } from "@/components/FraudChecker";
+import { UPIFraudChecker } from "@/components/UPIFraudChecker";
+import { Link } from "react-router-dom";
 
 const fraudTypeData = [
   { name: "Identity Theft", value: 87, fill: "#9b87f5" },
@@ -137,11 +140,14 @@ export default function FraudDetection() {
           </div>
           
           <Tabs defaultValue="overview" className="mb-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto">
+            <TabsList className="grid w-full grid-cols-5 lg:w-auto">
               <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="website-check">Website Check</TabsTrigger>
+              <TabsTrigger value="upi-check">UPI Check</TabsTrigger>
               <TabsTrigger value="alerts">Active Alerts</TabsTrigger>
-              <TabsTrigger value="analysis">Analysis</TabsTrigger>
-              <TabsTrigger value="reports">Reports</TabsTrigger>
+              <TabsTrigger value="reports">
+                <Link to="/crime-report" className="flex items-center">Reports</Link>
+              </TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="mt-4">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -181,6 +187,117 @@ export default function FraudDetection() {
                 </Card>
               </div>
             </TabsContent>
+            <TabsContent value="website-check">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <FraudChecker />
+                
+                <Card className="border-cyber-primary/20 bg-cyber-dark">
+                  <CardHeader>
+                    <CardTitle>Fraud Detection Guidelines</CardTitle>
+                    <CardDescription>How to identify potential fraud</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold mb-1 flex items-center">
+                        <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                        Common Signs of Fraudulent Websites
+                      </h3>
+                      <ul className="list-disc pl-5 text-sm space-y-1 text-cyber-muted">
+                        <li>Poor grammar and spelling errors</li>
+                        <li>URLs that mimic legitimate sites with slight variations</li>
+                        <li>HTTP instead of HTTPS (no secure connection)</li>
+                        <li>Requests for unusual payment methods</li>
+                        <li>Deals that seem too good to be true</li>
+                        <li>Pressure tactics or artificial urgency</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold mb-1 flex items-center">
+                        <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                        Phishing Email Indicators
+                      </h3>
+                      <ul className="list-disc pl-5 text-sm space-y-1 text-cyber-muted">
+                        <li>Generic greetings (e.g., "Dear Customer")</li>
+                        <li>Requests for personal information</li>
+                        <li>Suspicious sender email addresses</li>
+                        <li>Unexpected attachments</li>
+                        <li>Links that don't match the stated destination</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold mb-1 flex items-center">
+                        <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                        How to Stay Safe
+                      </h3>
+                      <ul className="list-disc pl-5 text-sm space-y-1 text-cyber-muted">
+                        <li>Verify the website's legitimacy before making purchases</li>
+                        <li>Look for secure payment options</li>
+                        <li>Research the company if you're unfamiliar with it</li>
+                        <li>Check for customer reviews on independent sites</li>
+                        <li>Use credit cards for better fraud protection</li>
+                        <li>Enable two-factor authentication when available</li>
+                      </ul>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
+            <TabsContent value="upi-check">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <UPIFraudChecker />
+                
+                <Card className="border-cyber-primary/20 bg-cyber-dark">
+                  <CardHeader>
+                    <CardTitle>UPI Fraud Prevention</CardTitle>
+                    <CardDescription>Protect yourself from UPI payment scams</CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    <div>
+                      <h3 className="font-semibold mb-1 flex items-center">
+                        <AlertTriangle className="h-4 w-4 mr-2 text-amber-500" />
+                        Common UPI Fraud Techniques
+                      </h3>
+                      <ul className="list-disc pl-5 text-sm space-y-1 text-cyber-muted">
+                        <li>Requesting money instead of sending it</li>
+                        <li>Fake KYC verification requests</li>
+                        <li>Fake cashback or reward schemes</li>
+                        <li>Impersonating bank officials or customer support</li>
+                        <li>QR code scams that debit instead of credit your account</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold mb-1 flex items-center">
+                        <CheckCircle className="h-4 w-4 mr-2 text-green-500" />
+                        UPI Safety Tips
+                      </h3>
+                      <ul className="list-disc pl-5 text-sm space-y-1 text-cyber-muted">
+                        <li>Never share your UPI PIN with anyone</li>
+                        <li>Verify the recipient before sending money</li>
+                        <li>Double-check UPI IDs for spelling variations</li>
+                        <li>Be cautious of QR codes from unknown sources</li>
+                        <li>Don't click on suspicious payment links</li>
+                        <li>Remember that receiving money never requires PIN or OTP</li>
+                      </ul>
+                    </div>
+                    
+                    <div className="bg-amber-900/20 p-3 rounded-md">
+                      <h3 className="font-semibold mb-1 flex items-center text-amber-400">
+                        <AlertCircle className="h-4 w-4 mr-2" />
+                        Important Warning
+                      </h3>
+                      <p className="text-sm text-cyber-muted">
+                        Legitimate banks or UPI services will never ask for your PIN, OTP, or full 
+                        card details over phone, email, or messages. Any request for sensitive 
+                        information should be treated as suspicious.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </TabsContent>
             <TabsContent value="alerts">
               <Card className="border-cyber-primary/20 bg-cyber-dark">
                 <CardHeader>
@@ -189,17 +306,6 @@ export default function FraudDetection() {
                 </CardHeader>
                 <CardContent>
                   <p>Alert details dashboard would be displayed here...</p>
-                </CardContent>
-              </Card>
-            </TabsContent>
-            <TabsContent value="analysis">
-              <Card className="border-cyber-primary/20 bg-cyber-dark">
-                <CardHeader>
-                  <CardTitle>Fraud Pattern Analysis</CardTitle>
-                  <CardDescription>AI-powered analysis of fraud patterns and trends</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <p>Analysis dashboard would be displayed here...</p>
                 </CardContent>
               </Card>
             </TabsContent>
