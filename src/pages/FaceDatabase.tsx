@@ -2,14 +2,21 @@
 import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, Edit, UserPlus, Search, BarChart4 } from "lucide-react";
+import { Trash2, Edit, UserPlus, Search, BarChart4, Upload } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { 
+import {
   Dialog,
   DialogContent,
   DialogDescription,
@@ -18,6 +25,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { supabase } from "@/integrations/supabase/client";
 
 interface Person {
   id: string;
@@ -37,7 +45,7 @@ export default function FaceDatabase() {
       age: 34,
       crime: "Fraud, Identity Theft",
       dateAdded: "15/11/2023",
-      imageUrl: "https://randomuser.me/api/portraits/men/32.jpg"
+      imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
     },
     {
       id: "2",
@@ -45,7 +53,7 @@ export default function FaceDatabase() {
       age: 29,
       crime: "Cyber Stalking",
       dateAdded: "3/12/2023",
-      imageUrl: "https://randomuser.me/api/portraits/men/68.jpg"
+      imageUrl: "https://randomuser.me/api/portraits/men/68.jpg",
     },
     {
       id: "3",
@@ -53,88 +61,175 @@ export default function FaceDatabase() {
       age: 41,
       crime: "Financial Scam",
       dateAdded: "21/1/2024",
-      imageUrl: "https://randomuser.me/api/portraits/men/91.jpg"
-    }
+      imageUrl: "https://randomuser.me/api/portraits/men/91.jpg",
+    },
   ]);
-  
+
   const [newPerson, setNewPerson] = useState<Omit<Person, "id" | "dateAdded">>({
     name: "",
     age: 0,
     crime: "",
-    imageUrl: ""
+    imageUrl: "",
   });
-  
+
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+
   const [editingId, setEditingId] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
+
+  // Function to upload image to supabase storage and return public URL
+  const uploadImage = async (file: File): Promise<string | null> => {
+    try {
+      setUploadingImage(true);
+      setUploadProgress(0);
+      const fileExt = file.name.split(".").pop();
+      const fileName = `${Date.now()}.${fileExt}`;
+      const filePath = `${fileName}`;
+      const { data, error } = await supabase.storage
+        .from("face-database-images")
+        .upload(filePath, file, {
+          cacheControl: "3600",
+          upsert: false,
+          onUploadProgress: (progressEvent) => {
+            if (progressEvent.lengthComputable) {
+              const progress = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(progress);
+            }
+          },
+        });
+      if (error) {
+        toast({
+          title: "Upload Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        setUploadingImage(false);
+        setUploadProgress(null);
+        return null;
+      }
+      if (data) {
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from("face-database-images")
+          .getPublicUrl(filePath);
+        setUploadingImage(false);
+        setUploadProgress(null);
+        if (publicUrlData?.publicUrl) {
+          return publicUrlData.publicUrl;
+        } else {
+          toast({
+            title: "Error",
+            description: "Could not get public URL for image",
+            variant: "destructive",
+          });
+          return null;
+        }
+      }
+      return null;
+    } catch (err) {
+      toast({
+        title: "Unexpected Error",
+        description: "Error uploading image",
+        variant: "destructive",
+      });
+      setUploadingImage(false);
+      setUploadProgress(null);
+      return null;
+    }
+  };
+
+  // Handler for file input change to upload and update newPerson.imageUrl
+  const handleImageChange = async (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+
+    // Optional: You can add file size and type validations here
+
+    const url = await uploadImage(file);
+    if (url) {
+      setNewPerson({ ...newPerson, imageUrl: url });
+      toast({
+        title: "Image uploaded",
+        description: "Image uploaded successfully.",
+      });
+    }
+  };
 
   const handleAddPerson = () => {
     if (!newPerson.name || !newPerson.crime) {
       toast({
         title: "Invalid input",
         description: "Please fill all required fields",
-        variant: "destructive"
+        variant: "destructive",
       });
       return;
     }
-    
+
     const currentDate = new Date();
-    const formattedDate = `${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
-    
+    const formattedDate = `${currentDate.getDate()}/${
+      currentDate.getMonth() + 1
+    }/${currentDate.getFullYear()}`;
+
     const person: Person = {
       id: Date.now().toString(),
       dateAdded: formattedDate,
-      ...newPerson
+      ...newPerson,
     };
-    
+
     setPeople([...people, person]);
     setNewPerson({
       name: "",
       age: 0,
       crime: "",
-      imageUrl: ""
+      imageUrl: "",
     });
-    
+
     toast({
       title: "Person added",
-      description: `${person.name} has been added to the database`
+      description: `${person.name} has been added to the database`,
     });
   };
 
   const handleEditPerson = (id: string) => {
-    const personToEdit = people.find(p => p.id === id);
+    const personToEdit = people.find((p) => p.id === id);
     if (!personToEdit) return;
-    
+
     setEditingId(id);
     setNewPerson({
       name: personToEdit.name,
       age: personToEdit.age,
       crime: personToEdit.crime,
-      imageUrl: personToEdit.imageUrl
+      imageUrl: personToEdit.imageUrl,
     });
   };
 
   const handleUpdatePerson = () => {
     if (!editingId) return;
-    
-    setPeople(people.map(person => 
-      person.id === editingId 
-        ? { ...person, ...newPerson }
-        : person
-    ));
-    
+
+    setPeople(
+      people.map((person) =>
+        person.id === editingId ? { ...person, ...newPerson } : person
+      )
+    );
+
     setEditingId(null);
     setNewPerson({
       name: "",
       age: 0,
       crime: "",
-      imageUrl: ""
+      imageUrl: "",
     });
-    
+
     toast({
       title: "Person updated",
-      description: "The record has been updated successfully"
+      description: "The record has been updated successfully",
     });
   };
 
@@ -145,21 +240,22 @@ export default function FaceDatabase() {
 
   const handleDeletePerson = () => {
     if (!personToDelete) return;
-    
-    setPeople(people.filter(person => person.id !== personToDelete));
+
+    setPeople(people.filter((person) => person.id !== personToDelete));
     setDeleteDialogOpen(false);
     setPersonToDelete(null);
-    
+
     toast({
       title: "Person deleted",
-      description: "The record has been deleted from the database"
+      description: "The record has been deleted from the database",
     });
   };
 
-  const filteredPeople = searchQuery 
-    ? people.filter(person => 
-        person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        person.crime.toLowerCase().includes(searchQuery.toLowerCase())
+  const filteredPeople = searchQuery
+    ? people.filter(
+        (person) =>
+          person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          person.crime.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : people;
 
@@ -175,14 +271,18 @@ export default function FaceDatabase() {
                 <TabsTrigger value="database">Face Database</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="database">
                 <Card className="border-cyber-primary/20 bg-cyber-dark">
                   <CardHeader>
                     <div className="flex justify-between items-center">
                       <div>
-                        <CardTitle className="text-xl font-semibold">Face Database</CardTitle>
-                        <CardDescription>{people.length} individuals tracked</CardDescription>
+                        <CardTitle className="text-xl font-semibold">
+                          Face Database
+                        </CardTitle>
+                        <CardDescription>
+                          {people.length} individuals tracked
+                        </CardDescription>
                       </div>
                       <div className="flex items-center gap-4">
                         <div className="relative">
@@ -200,7 +300,9 @@ export default function FaceDatabase() {
                   <CardContent>
                     <Card className="border-cyber-primary/20 bg-cyber-dark mb-6">
                       <CardHeader className="pb-2">
-                        <CardTitle className="text-md">{editingId ? "Edit Person" : "Add New Face"}</CardTitle>
+                        <CardTitle className="text-md">
+                          {editingId ? "Edit Person" : "Add New Face"}
+                        </CardTitle>
                       </CardHeader>
                       <CardContent>
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -209,7 +311,9 @@ export default function FaceDatabase() {
                             <Input
                               id="name"
                               value={newPerson.name}
-                              onChange={(e) => setNewPerson({...newPerson, name: e.target.value})}
+                              onChange={(e) =>
+                                setNewPerson({ ...newPerson, name: e.target.value })
+                              }
                               className="mt-1"
                             />
                           </div>
@@ -219,7 +323,12 @@ export default function FaceDatabase() {
                               id="age"
                               type="number"
                               value={newPerson.age}
-                              onChange={(e) => setNewPerson({...newPerson, age: parseInt(e.target.value) || 0})}
+                              onChange={(e) =>
+                                setNewPerson({
+                                  ...newPerson,
+                                  age: parseInt(e.target.value) || 0,
+                                })
+                              }
                               className="mt-1"
                             />
                           </div>
@@ -228,37 +337,56 @@ export default function FaceDatabase() {
                             <Input
                               id="crime"
                               value={newPerson.crime}
-                              onChange={(e) => setNewPerson({...newPerson, crime: e.target.value})}
+                              onChange={(e) =>
+                                setNewPerson({ ...newPerson, crime: e.target.value })
+                              }
                               className="mt-1"
                             />
                           </div>
                           <div>
-                            <Label htmlFor="imageUrl">Image URL</Label>
-                            <Input
-                              id="imageUrl"
-                              value={newPerson.imageUrl}
-                              onChange={(e) => setNewPerson({...newPerson, imageUrl: e.target.value})}
-                              className="mt-1"
-                              placeholder="https://example.com/image.jpg"
+                            <Label htmlFor="imageUpload" className="flex items-center gap-2">
+                              Image Upload
+                              <Upload className="h-4 w-4" />
+                            </Label>
+                            <input
+                              id="imageUpload"
+                              type="file"
+                              accept="image/*"
+                              onChange={handleImageChange}
+                              disabled={uploadingImage}
+                              className="mt-1 block w-full text-sm text-white file:mr-4 file:rounded-md file:border-0 file:bg-cyber-primary file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white file:hover:bg-cyber-primary/90"
                             />
+                            {uploadingImage && (
+                              <p className="text-sm text-muted-foreground mt-1">
+                                Uploading: {uploadProgress ?? 0}%
+                              </p>
+                            )}
+                            {newPerson.imageUrl && !uploadingImage && (
+                              <img
+                                src={newPerson.imageUrl}
+                                alt="Uploaded Preview"
+                                className="mt-2 h-24 w-24 rounded object-cover border border-cyber-primary"
+                              />
+                            )}
                           </div>
                         </div>
                       </CardContent>
                       <CardFooter>
                         {editingId ? (
                           <div className="flex gap-2">
-                            <Button onClick={handleUpdatePerson}>
-                              Save Changes
-                            </Button>
-                            <Button variant="outline" onClick={() => {
-                              setEditingId(null);
-                              setNewPerson({
-                                name: "",
-                                age: 0,
-                                crime: "",
-                                imageUrl: ""
-                              });
-                            }}>
+                            <Button onClick={handleUpdatePerson}>Save Changes</Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                setEditingId(null);
+                                setNewPerson({
+                                  name: "",
+                                  age: 0,
+                                  crime: "",
+                                  imageUrl: "",
+                                });
+                              }}
+                            >
                               Cancel
                             </Button>
                           </div>
@@ -270,13 +398,16 @@ export default function FaceDatabase() {
                         )}
                       </CardFooter>
                     </Card>
-                    
+
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                       {filteredPeople.map((person) => (
-                        <Card key={person.id} className="border-cyber-primary/20 bg-cyber-background">
+                        <Card
+                          key={person.id}
+                          className="border-cyber-primary/20 bg-cyber-background"
+                        >
                           <div className="aspect-square w-full overflow-hidden">
-                            <img 
-                              src={person.imageUrl || "https://via.placeholder.com/300"} 
+                            <img
+                              src={person.imageUrl || "https://via.placeholder.com/300"}
                               alt={person.name}
                               className="w-full h-full object-cover"
                             />
@@ -293,15 +424,15 @@ export default function FaceDatabase() {
                             </p>
                           </CardContent>
                           <CardFooter className="flex justify-between">
-                            <Button 
-                              variant="outline" 
+                            <Button
+                              variant="outline"
                               size="sm"
                               onClick={() => handleEditPerson(person.id)}
                             >
                               <Edit className="h-4 w-4 mr-1" /> Edit
                             </Button>
-                            <Button 
-                              variant="destructive" 
+                            <Button
+                              variant="destructive"
                               size="sm"
                               onClick={() => confirmDelete(person.id)}
                             >
@@ -314,7 +445,7 @@ export default function FaceDatabase() {
                   </CardContent>
                 </Card>
               </TabsContent>
-              
+
               <TabsContent value="analytics">
                 <Card className="border-cyber-primary/20 bg-cyber-dark">
                   <CardHeader>
@@ -322,51 +453,67 @@ export default function FaceDatabase() {
                       <BarChart4 className="h-5 w-5 text-cyber-primary" />
                       Face Database Analytics
                     </CardTitle>
-                    <CardDescription>Statistics and data analysis of tracked individuals</CardDescription>
+                    <CardDescription>
+                      Statistics and data analysis of tracked individuals
+                    </CardDescription>
                   </CardHeader>
                   <CardContent>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
                       <Card className="bg-cyber-background/30 p-4">
                         <h3 className="font-medium mb-1">Total Records</h3>
                         <p className="text-3xl font-bold">{people.length}</p>
-                        <p className="text-xs text-muted-foreground mt-1">Faces in database</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Faces in database
+                        </p>
                       </Card>
                       <Card className="bg-cyber-background/30 p-4">
                         <h3 className="font-medium mb-1">Crime Categories</h3>
                         <p className="text-3xl font-bold">
-                          {new Set(people.map(p => p.crime.split(", ")[0])).size}
+                          {new Set(people.map((p) => p.crime.split(", ")[0])).size}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">Unique primary crimes</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Unique primary crimes
+                        </p>
                       </Card>
                       <Card className="bg-cyber-background/30 p-4">
                         <h3 className="font-medium mb-1">Average Age</h3>
                         <p className="text-3xl font-bold">
-                          {people.length > 0 ? Math.round(people.reduce((sum, p) => sum + p.age, 0) / people.length) : 0}
+                          {people.length > 0
+                            ? Math.round(
+                                people.reduce((sum, p) => sum + p.age, 0) / people.length
+                              )
+                            : 0}
                         </p>
-                        <p className="text-xs text-muted-foreground mt-1">Of tracked individuals</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Of tracked individuals
+                        </p>
                       </Card>
                     </div>
 
                     <h3 className="font-medium mb-4">Crime Distribution</h3>
                     <div className="space-y-3">
-                      {Array.from(new Set(people.map(p => p.crime.split(", ")[0]))).map(crime => {
-                        const count = people.filter(p => p.crime.includes(crime)).length;
-                        const percentage = (count / people.length) * 100;
-                        return (
-                          <div key={crime} className="w-full">
-                            <div className="flex justify-between mb-1">
-                              <span className="text-sm">{crime}</span>
-                              <span className="text-sm">{count} ({percentage.toFixed(0)}%)</span>
+                      {Array.from(new Set(people.map((p) => p.crime.split(", ")[0]))).map(
+                        (crime) => {
+                          const count = people.filter((p) => p.crime.includes(crime)).length;
+                          const percentage = (count / people.length) * 100;
+                          return (
+                            <div key={crime} className="w-full">
+                              <div className="flex justify-between mb-1">
+                                <span className="text-sm">{crime}</span>
+                                <span className="text-sm">
+                                  {count} ({percentage.toFixed(0)}%)
+                                </span>
+                              </div>
+                              <div className="h-2 w-full bg-cyber-background rounded-full overflow-hidden">
+                                <div
+                                  className="h-full bg-cyber-primary"
+                                  style={{ width: `${percentage}%` }}
+                                ></div>
+                              </div>
                             </div>
-                            <div className="h-2 w-full bg-cyber-background rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-cyber-primary" 
-                                style={{ width: `${percentage}%` }}
-                              ></div>
-                            </div>
-                          </div>
-                        );
-                      })}
+                          );
+                        }
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -375,7 +522,7 @@ export default function FaceDatabase() {
           </div>
         </main>
       </div>
-      
+
       {/* Confirmation Dialog for Delete */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
@@ -386,8 +533,12 @@ export default function FaceDatabase() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDeletePerson}>Delete</Button>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeletePerson}>
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
