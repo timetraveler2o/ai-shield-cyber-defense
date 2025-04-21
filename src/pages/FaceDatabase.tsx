@@ -79,7 +79,6 @@ export default function FaceDatabase() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
 
-  // Updated function to upload image to supabase storage
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       setUploadingImage(true);
@@ -89,10 +88,9 @@ export default function FaceDatabase() {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
       
-      // Simulate progress for better user experience
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
-          if (prev && prev < 90) return prev + 10;
+          if (prev !== null && prev < 90) return prev + 10;
           return prev;
         });
       }, 300);
@@ -101,7 +99,7 @@ export default function FaceDatabase() {
         .from("face-database-images")
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: false,
+          upsert: true,
         });
         
       clearInterval(progressInterval);
@@ -120,27 +118,23 @@ export default function FaceDatabase() {
       
       setUploadProgress(100);
       
-      if (data) {
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-          .from("face-database-images")
-          .getPublicUrl(filePath);
-          
-        setUploadingImage(false);
-        setUploadProgress(null);
+      const { data: publicUrlData } = supabase.storage
+        .from("face-database-images")
+        .getPublicUrl(filePath);
         
-        if (publicUrlData?.publicUrl) {
-          return publicUrlData.publicUrl;
-        } else {
-          useToastHook({
-            title: "Error",
-            description: "Could not get public URL for image",
-            variant: "destructive",
-          });
-          return null;
-        }
+      setUploadingImage(false);
+      setUploadProgress(null);
+      
+      if (publicUrlData?.publicUrl) {
+        return publicUrlData.publicUrl;
+      } else {
+        useToastHook({
+          title: "Error",
+          description: "Could not get public URL for image",
+          variant: "destructive",
+        });
+        return null;
       }
-      return null;
     } catch (err) {
       console.error("Unexpected upload error:", err);
       useToastHook({
@@ -154,14 +148,11 @@ export default function FaceDatabase() {
     }
   };
 
-  // Handler for file input change to upload and update newPerson.imageUrl
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     if (!e.target.files || e.target.files.length === 0) return;
     const file = e.target.files[0];
-
-    // Optional: You can add file size and type validations here
 
     const url = await uploadImage(file);
     if (url) {
@@ -219,17 +210,26 @@ export default function FaceDatabase() {
       crime: personToEdit.crime,
       imageUrl: personToEdit.imageUrl,
     });
+
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleUpdatePerson = () => {
     if (!editingId) return;
 
-    setPeople(
-      people.map((person) =>
-        person.id === editingId ? { ...person, ...newPerson } : person
-      )
+    const updatedPeople = people.map((person) =>
+      person.id === editingId 
+        ? { 
+            ...person, 
+            name: newPerson.name,
+            age: newPerson.age,
+            crime: newPerson.crime,
+            imageUrl: newPerson.imageUrl 
+          } 
+        : person
     );
 
+    setPeople(updatedPeople);
     setEditingId(null);
     setNewPerson({
       name: "",
@@ -534,7 +534,6 @@ export default function FaceDatabase() {
         </main>
       </div>
 
-      {/* Confirmation Dialog for Delete */}
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
