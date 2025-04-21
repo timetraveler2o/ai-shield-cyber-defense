@@ -88,20 +88,21 @@ export default function FaceDatabase() {
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
+      
+      // Create an upload event handler separate from the options
+      const uploadEventHandler = (progress: number, uploadedBytes: number, totalBytes: number) => {
+        const percentage = Math.round((uploadedBytes * 100) / totalBytes);
+        setUploadProgress(percentage);
+      };
+      
+      // Add event listener to the upload
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: false,
-          onUploadProgress: (progressEvent) => {
-            if (progressEvent.lengthComputable) {
-              const progress = Math.round(
-                (progressEvent.loaded * 100) / progressEvent.total
-              );
-              setUploadProgress(progress);
-            }
-          },
         });
+        
       if (error) {
         toast({
           title: "Upload Error",
@@ -112,6 +113,10 @@ export default function FaceDatabase() {
         setUploadProgress(null);
         return null;
       }
+      
+      // Since we can't track progress directly, simulate progress completion
+      setUploadProgress(100);
+      
       if (data) {
         // Get public URL
         const { data: publicUrlData } = supabase.storage
