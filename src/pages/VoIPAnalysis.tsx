@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -93,7 +92,6 @@ export default function VoIPAnalysis() {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
       
-      // Stop all audio tracks
       mediaRecorderRef.current.stream.getTracks().forEach(track => track.stop());
     }
   };
@@ -108,19 +106,15 @@ export default function VoIPAnalysis() {
 
     setIsAnalyzing(true);
     
-    // Simulate transcription process
     setTimeout(() => {
       const fakeTranscription = "Hello, this is your bank calling. We've noticed suspicious activity on your account. To verify your identity and protect your account, we need you to share your OTP code that we just sent to your phone. This is urgent as your account might be blocked.";
       setTranscription(fakeTranscription);
       
-      // Simulate analysis process
       setTimeout(() => {
-        // Detect fraud patterns in transcription
         const detectedPatterns = fraudPatterns.filter(pattern => 
           fakeTranscription.toLowerCase().includes(pattern.pattern.toLowerCase())
         );
         
-        // Calculate fraud score based on patterns
         const fraudScore = detectedPatterns.reduce((score, pattern) => {
           if (pattern.severity === "critical") return score + 30;
           if (pattern.severity === "high") return score + 20;
@@ -128,10 +122,8 @@ export default function VoIPAnalysis() {
           return score + 5;
         }, 0);
         
-        // Cap score at 100
         const finalScore = Math.min(fraudScore, 100);
         
-        // Determine emotion analysis
         const emotionAnalysis = {
           urgency: 85,
           pressure: 78,
@@ -163,16 +155,13 @@ export default function VoIPAnalysis() {
     e.preventDefault();
     if (!chatInput.trim()) return;
     
-    // Add user message
     const userMessage = { role: "user", content: chatInput };
     setChatMessages(prev => [...prev, userMessage]);
     setChatInput("");
     
-    // Simulate AI response after a short delay
     setTimeout(() => {
       let aiResponse = "";
       
-      // Simple pattern matching for demo purposes
       if (chatInput.toLowerCase().includes("otp") || chatInput.toLowerCase().includes("password")) {
         aiResponse = "This appears to be a common fraud pattern. Scammers often ask for OTP or passwords to gain unauthorized access to accounts. Advise the victim not to share any codes and report the incident immediately.";
       } else if (chatInput.toLowerCase().includes("bank") || chatInput.toLowerCase().includes("account")) {
@@ -241,8 +230,8 @@ export default function VoIPAnalysis() {
                     Upload audio files for scam detection
                   </p>
                   <label htmlFor="audio-upload">
-                    <Button variant="outline" size="sm" className="mt-4" as="span">
-                      Upload Recording
+                    <Button variant="outline" size="sm" className="mt-4" asChild>
+                      <span>Upload Recording</span>
                     </Button>
                     <input 
                       id="audio-upload" 
@@ -306,8 +295,8 @@ export default function VoIPAnalysis() {
                         </p>
                         <div className="flex gap-2 mt-4">
                           <label htmlFor="voice-upload">
-                            <Button variant="default" size="sm" as="span">
-                              Upload File
+                            <Button variant="default" size="sm" asChild>
+                              <span>Upload File</span>
                             </Button>
                             <input 
                               id="voice-upload" 
