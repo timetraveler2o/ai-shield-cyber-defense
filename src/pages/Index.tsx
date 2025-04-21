@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { StatisticsChart } from "@/components/StatisticsChart";
 import { StatusCard } from "@/components/StatusCard";
-import { ThreatMap } from "@/components/ThreatMap";
+import { ImprovedThreatMap } from "@/components/ImprovedThreatMap";
 
 const threatStats = [
   { name: "Phishing", value: 342, fill: "#9b87f5" },
@@ -63,7 +63,7 @@ export default function Index() {
             />
           </div>
 
-          <ThreatMap />
+          <ImprovedThreatMap />
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
             <StatisticsChart title="Threats by Category" data={threatStats} />
