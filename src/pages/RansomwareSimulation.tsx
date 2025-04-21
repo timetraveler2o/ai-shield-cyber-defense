@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -722,4 +723,52 @@ export default function RansomwareSimulation() {
                         <p>Analyze the ransomware sample in a sandbox environment to understand its behavior and identify indicators of compromise.</p>
                       </CardContent>
                       <CardFooter>
-                        <Button variant="outline" size="
+                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    <Card className="bg-cyber-background/30">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Incident Response</CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-xs text-cyber-muted">
+                        <p>Follow structured incident response procedures to contain, eradicate, and recover from the ransomware attack.</p>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    <Card className="bg-cyber-background/30">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">System Isolation</CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-xs text-cyber-muted">
+                        <p>Isolate infected systems from the network to prevent further spread of the ransomware.</p>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
+                      </CardFooter>
+                    </Card>
+                    
+                    <Card className="bg-cyber-background/30">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm">Forensic Investigation</CardTitle>
+                      </CardHeader>
+                      <CardContent className="text-xs text-cyber-muted">
+                        <p>Conduct digital forensics to determine the initial infection vector and develop attribution if possible.</p>
+                      </CardContent>
+                      <CardFooter>
+                        <Button variant="outline" size="sm" className="w-full">Launch Tool</Button>
+                      </CardFooter>
+                    </Card>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </main>
+      </div>
+    </div>
+  );
+}
