@@ -1,12 +1,41 @@
+
+import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Shield, User, MessageSquare, Clock, FileText, BadgeCheck } from "lucide-react";
+import { Shield, User, MessageSquare, Clock, FileText, BadgeCheck, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { Badge as BadgeIcon } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { toast } from "sonner";
 
 export default function Profile() {
+  const [isEditing, setIsEditing] = useState(false);
+  const [profileData, setProfileData] = useState({
+    name: "Officer Raj Kumar",
+    badgeId: "CP2345",
+    department: "Digital Forensics",
+    location: "Chandigarh HQ",
+    email: "raj.kumar@cybercell.gov.in",
+    phone: "+91 987X XXX345"
+  });
+
+  const handleInputChange = (field: string, value: string) => {
+    setProfileData(prev => ({
+      ...prev,
+      [field]: value
+    }));
+  };
+
+  const handleSaveProfile = () => {
+    // Save profile data to database/state
+    setIsEditing(false);
+    toast.success("Profile updated successfully!", {
+      description: "Your profile information has been saved."
+    });
+  };
+
   return (
     <div className="flex h-screen bg-cyber-background overflow-hidden">
       <AppSidebar />
@@ -20,7 +49,15 @@ export default function Profile() {
                   <div className="w-24 h-24 rounded-full bg-cyber-primary/20 mx-auto flex items-center justify-center mb-4">
                     <User className="h-12 w-12 text-cyber-primary" />
                   </div>
-                  <CardTitle>Officer Raj Kumar</CardTitle>
+                  {isEditing ? (
+                    <Input 
+                      value={profileData.name} 
+                      onChange={(e) => handleInputChange("name", e.target.value)}
+                      className="text-center font-bold text-xl" 
+                    />
+                  ) : (
+                    <CardTitle>{profileData.name}</CardTitle>
+                  )}
                   <CardDescription className="flex items-center justify-center gap-1">
                     <BadgeCheck className="h-4 w-4 text-cyber-primary" />
                     Cyber Crime Specialist
@@ -30,15 +67,39 @@ export default function Profile() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-cyber-muted">Badge ID</span>
-                      <span className="font-medium">CP2345</span>
+                      {isEditing ? (
+                        <Input 
+                          value={profileData.badgeId} 
+                          onChange={(e) => handleInputChange("badgeId", e.target.value)}
+                          className="w-32 h-8 text-sm" 
+                        />
+                      ) : (
+                        <span className="font-medium">{profileData.badgeId}</span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-cyber-muted">Department</span>
-                      <span className="font-medium">Digital Forensics</span>
+                      {isEditing ? (
+                        <Input 
+                          value={profileData.department} 
+                          onChange={(e) => handleInputChange("department", e.target.value)}
+                          className="w-32 h-8 text-sm" 
+                        />
+                      ) : (
+                        <span className="font-medium">{profileData.department}</span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-cyber-muted">Location</span>
-                      <span className="font-medium">Chandigarh HQ</span>
+                      {isEditing ? (
+                        <Input 
+                          value={profileData.location} 
+                          onChange={(e) => handleInputChange("location", e.target.value)}
+                          className="w-32 h-8 text-sm" 
+                        />
+                      ) : (
+                        <span className="font-medium">{profileData.location}</span>
+                      )}
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-cyber-muted">Joined</span>
@@ -51,11 +112,27 @@ export default function Profile() {
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-cyber-muted">Email</span>
-                        <span className="text-sm">raj.kumar@cybercell.gov.in</span>
+                        {isEditing ? (
+                          <Input 
+                            value={profileData.email} 
+                            onChange={(e) => handleInputChange("email", e.target.value)}
+                            className="w-40 h-8 text-sm" 
+                          />
+                        ) : (
+                          <span className="text-sm">{profileData.email}</span>
+                        )}
                       </div>
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-cyber-muted">Phone</span>
-                        <span className="text-sm">+91 987X XXX345</span>
+                        {isEditing ? (
+                          <Input 
+                            value={profileData.phone} 
+                            onChange={(e) => handleInputChange("phone", e.target.value)}
+                            className="w-40 h-8 text-sm" 
+                          />
+                        ) : (
+                          <span className="text-sm">{profileData.phone}</span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -88,9 +165,20 @@ export default function Profile() {
                   </div>
                 </CardContent>
                 <CardFooter>
-                  <Button variant="outline" className="w-full">
-                    Edit Profile
-                  </Button>
+                  {isEditing ? (
+                    <div className="w-full flex gap-2">
+                      <Button variant="outline" className="w-full" onClick={() => setIsEditing(false)}>
+                        Cancel
+                      </Button>
+                      <Button className="w-full" onClick={handleSaveProfile}>
+                        <Check className="h-4 w-4 mr-2" /> Save
+                      </Button>
+                    </div>
+                  ) : (
+                    <Button variant="outline" className="w-full" onClick={() => setIsEditing(true)}>
+                      Edit Profile
+                    </Button>
+                  )}
                 </CardFooter>
               </Card>
             </div>
