@@ -1,283 +1,107 @@
+
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Video, Upload, BarChart, AlertTriangle, Users, CheckCircle, User, Database, Shield } from "lucide-react";
-import { Progress } from "@/components/ui/progress";
-import { StatisticsChart } from "@/components/StatisticsChart";
 import { Input } from "@/components/ui/input";
+import { 
+  Tabs, 
+  TabsContent, 
+  TabsList, 
+  TabsTrigger 
+} from "@/components/ui/tabs";
+import { 
+  Upload, 
+  Video, 
+  Image as ImageIcon, 
+  Camera, 
+  Check, 
+  X, 
+  AlertTriangle, 
+  UserCheck,
+  Database,
+  BarChart4
+} from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { Label } from "@/components/ui/label";
-import { Form, FormField, FormItem, FormLabel, FormControl, FormDescription, FormMessage } from "@/components/ui/form";
-import { useForm } from "react-hook-form";
-import { z } from "zod";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/hooks/use-toast";
-import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
-
-const deepfakeTypeData = [
-  { name: "Face Swap", value: 145, fill: "#9b87f5" },
-  { name: "Voice Clone", value: 87, fill: "#0FA0CE" },
-  { name: "Full Synthetic", value: 53, fill: "#ea384c" },
-  { name: "Lip Sync", value: 78, fill: "#8B5CF6" },
-  { name: "Expression Swap", value: 63, fill: "#f97316" },
-];
-
-const faceEntrySchema = z.object({
-  name: z.string().min(2, { message: "Name must be at least 2 characters" }),
-  age: z.string().refine((val) => !isNaN(parseInt(val)), { message: "Age must be a number" }),
-  crime: z.string().min(2, { message: "Crime details required" }),
-  notes: z.string().optional(),
-});
-
-const videoAnalysisSchema = z.object({
-  caseNumber: z.string().optional(),
-  notes: z.string().optional(),
-});
-
-type FaceEntryValues = z.infer<typeof faceEntrySchema>;
-type VideoAnalysisValues = z.infer<typeof videoAnalysisSchema>;
+import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
 export default function DeepfakeDetection() {
-  const [faceImage, setFaceImage] = useState<File | null>(null);
-  const [faceImagePreview, setFaceImagePreview] = useState<string | null>(null);
-  const [videoFile, setVideoFile] = useState<File | null>(null);
-  const [videoFilename, setVideoFilename] = useState<string | null>(null);
-  const [analyzing, setAnalyzing] = useState(false);
-  const [analysisProgress, setAnalysisProgress] = useState(0);
-  const [matchResults, setMatchResults] = useState<Array<{
-    confidence: number;
-    name: string;
-    age: string;
-    crime: string;
-    timestamp: string;
-    faceImageUrl: string;
-  }>>([]);
-  const [activeTab, setActiveTab] = useState("detection");
-  const [faceDbEntries, setFaceDbEntries] = useState<Array<{
-    id: string;
-    name: string;
-    age: string;
-    crime: string;
-    created_at: string;
-    face_url: string;
-  }>>([]);
-  const [dbLoading, setDbLoading] = useState(false);
-
-  const faceEntryForm = useForm<FaceEntryValues>({
-    resolver: zodResolver(faceEntrySchema),
-    defaultValues: {
-      name: "",
-      age: "",
-      crime: "",
-      notes: "",
-    },
-  });
-
-  const videoAnalysisForm = useForm<VideoAnalysisValues>({
-    resolver: zodResolver(videoAnalysisSchema),
-    defaultValues: {
-      caseNumber: "",
-      notes: "",
-    },
-  });
-
-  const handleFaceImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const [file, setFile] = useState<File | null>(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [analysisComplete, setAnalysisComplete] = useState(false);
+  const [deepfakeScore, setDeepfakeScore] = useState(0);
+  const [detectionProgress, setDetectionProgress] = useState(0);
+  
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setFaceImage(file);
-      
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        if (event.target) {
-          setFaceImagePreview(event.target.result as string);
-        }
-      };
-      reader.readAsDataURL(file);
+      const selectedFile = e.target.files[0];
+      setFile(selectedFile);
+      setImageUrl(URL.createObjectURL(selectedFile));
+      setAnalysisComplete(false);
+      setDeepfakeScore(0);
     }
   };
-
-  const handleVideoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      const file = e.target.files[0];
-      setVideoFile(file);
-      setVideoFilename(file.name);
-    }
+  
+  const handleUrlInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setImageUrl(e.target.value);
+    setFile(null);
+    setAnalysisComplete(false);
+    setDeepfakeScore(0);
   };
-
-  const onFaceEntrySubmit = async (data: FaceEntryValues) => {
-    if (!faceImage) {
-      toast({
-        title: "Error",
-        description: "Please upload a face image",
-        variant: "destructive",
-      });
+  
+  const analyzeContent = () => {
+    if (!file && !imageUrl) {
+      toast.error("Please upload an image/video or enter a URL");
       return;
     }
-
-    try {
-      const timestamp = new Date().getTime();
-      const fileExt = faceImage.name.split('.').pop();
-      const fileName = `${timestamp}-${data.name.replace(/\s+/g, '-').toLowerCase()}.${fileExt}`;
-      const filePath = `faces/${fileName}`;
-
-      toast({
-        title: "Adding to database...",
-        description: "Please wait while we process the face data",
-      });
-
-      setTimeout(() => {
-        const newEntry = {
-          id: Math.random().toString(36).substring(2, 15),
-          name: data.name,
-          age: data.age,
-          crime: data.crime,
-          created_at: new Date().toISOString(),
-          face_url: faceImagePreview as string,
-        };
-
-        setFaceDbEntries(prev => [...prev, newEntry]);
-
-        faceEntryForm.reset();
-        setFaceImage(null);
-        setFaceImagePreview(null);
-
-        toast({
-          title: "Success",
-          description: "Face successfully added to the database",
-          variant: "default",
-        });
-
-        setActiveTab("database");
-      }, 1500);
-    } catch (error) {
-      console.error("Error adding face to database:", error);
-      toast({
-        title: "Error",
-        description: "Failed to add face to database",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const analyzeVideo = async (data: VideoAnalysisValues) => {
-    if (!videoFile) {
-      toast({
-        title: "Error",
-        description: "Please upload a video for analysis",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setAnalyzing(true);
-    setAnalysisProgress(0);
-    setMatchResults([]);
-
-    const totalFrames = 100;
-    let currentFrame = 0;
     
-    toast({
-      title: "Analysis Started",
-      description: "Processing video frames for face matches",
-    });
-
+    setIsAnalyzing(true);
+    setDetectionProgress(0);
+    
+    // Simulate analysis with progress updates
     const interval = setInterval(() => {
-      currentFrame += 5;
-      const progress = Math.min((currentFrame / totalFrames) * 100, 100);
-      setAnalysisProgress(progress);
-
-      if (faceDbEntries.length > 0 && (currentFrame === 25 || currentFrame === 60 || currentFrame === 85)) {
-        const randomEntry = faceDbEntries[Math.floor(Math.random() * faceDbEntries.length)];
-        const newMatch = {
-          confidence: Math.floor(85 + Math.random() * 15),
-          name: randomEntry.name,
-          age: randomEntry.age,
-          crime: randomEntry.crime,
-          timestamp: `00:${Math.floor(Math.random() * 5)}${Math.floor(Math.random() * 9)}:${Math.floor(Math.random() * 5)}${Math.floor(Math.random() * 9)}`,
-          faceImageUrl: randomEntry.face_url,
-        };
-        
-        setMatchResults(prev => [...prev, newMatch]);
-        
-        toast({
-          title: "Match Found",
-          description: `Found match for ${randomEntry.name} with ${newMatch.confidence}% confidence`,
-        });
-      }
-
-      if (currentFrame >= totalFrames) {
-        clearInterval(interval);
-        setAnalyzing(false);
-        videoAnalysisForm.reset();
-        
-        toast({
-          title: "Analysis Complete",
-          description: `Found ${matchResults.length + 1} matches in the video`,
-        });
-        
-        if (faceDbEntries.length > 0) {
-          const lastEntry = faceDbEntries[0];
-          const finalMatch = {
-            confidence: 99,
-            name: lastEntry.name,
-            age: lastEntry.age,
-            crime: lastEntry.crime,
-            timestamp: `00:01:17`,
-            faceImageUrl: lastEntry.face_url,
-          };
+      setDetectionProgress(prev => {
+        const newValue = prev + Math.random() * 15;
+        if (newValue >= 100) {
+          clearInterval(interval);
+          setIsAnalyzing(false);
+          setAnalysisComplete(true);
           
-          setMatchResults(prev => [...prev, finalMatch]);
+          // Generate a random score between 0.1 and 0.9 for demo
+          const score = Math.random() * 100;
+          setDeepfakeScore(parseFloat(score.toFixed(2)));
+          
+          if (score > 70) {
+            toast.error("High probability of deepfake detected!", {
+              description: "This content exhibits strong indicators of manipulation"
+            });
+          } else if (score > 40) {
+            toast.warning("Medium probability of deepfake detected", {
+              description: "Some indicators of manipulation were detected"
+            });
+          } else {
+            toast.success("Content appears to be authentic", {
+              description: "No significant indicators of manipulation detected"
+            });
+          }
+          
+          return 100;
         }
-      }
-    }, 200);
-
-    return () => clearInterval(interval);
+        return newValue;
+      });
+    }, 300);
   };
-
-  const loadFaceDatabase = () => {
-    setDbLoading(true);
-    setTimeout(() => {
-      if (faceDbEntries.length === 0) {
-        setFaceDbEntries([
-          {
-            id: "1",
-            name: "John Smith",
-            age: "34",
-            crime: "Fraud, Identity Theft",
-            created_at: "2023-11-15T08:30:00Z",
-            face_url: "https://i.pravatar.cc/150?img=1",
-          },
-          {
-            id: "2",
-            name: "Aakash Patel",
-            age: "29",
-            crime: "Cyber Stalking",
-            created_at: "2023-12-03T14:22:10Z",
-            face_url: "https://i.pravatar.cc/150?img=2",
-          },
-          {
-            id: "3",
-            name: "Sameer Khan",
-            age: "41",
-            crime: "Financial Scam",
-            created_at: "2024-01-21T11:45:30Z",
-            face_url: "https://i.pravatar.cc/150?img=3",
-          },
-        ]);
-      }
-      setDbLoading(false);
-    }, 1000);
-  };
-
-  const handleTabChange = (value: string) => {
-    setActiveTab(value);
-    if (value === "database" && faceDbEntries.length === 0) {
-      loadFaceDatabase();
-    }
+  
+  const resetAnalysis = () => {
+    setFile(null);
+    setImageUrl('');
+    setAnalysisComplete(false);
+    setDeepfakeScore(0);
+    setDetectionProgress(0);
   };
 
   return (
@@ -286,547 +110,415 @@ export default function DeepfakeDetection() {
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
         <main className="flex-1 overflow-y-auto p-6 bg-cyber-background">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
+          <div className="mb-6">
             <Card className="border-cyber-primary/20 bg-cyber-dark">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold">Deepfake Detection</CardTitle>
-                <CardDescription>AI-powered media forensics</CardDescription>
+              <CardHeader>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <CardTitle className="text-xl font-semibold flex items-center gap-2">
+                      <Camera className="h-5 w-5 text-cyber-primary" />
+                      Deepfake Detection Tool
+                    </CardTitle>
+                    <CardDescription>Analyze images and videos for signs of AI manipulation</CardDescription>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold">426</span>
-                    <span className="text-xs text-cyber-muted">Deepfakes detected this month</span>
-                  </div>
-                  <Video className="h-10 w-10 text-cyber-primary" />
-                </div>
-                <div className="mt-4">
-                  <div className="flex justify-between text-xs mb-1">
-                    <span>Detection Accuracy</span>
-                    <span>94.2%</span>
-                  </div>
-                  <Progress value={94.2} className="h-1" indicatorClassName="bg-green-500" />
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-cyber-primary/20 bg-cyber-dark">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold">Face Database</CardTitle>
-                <CardDescription>Known individuals tracking</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold">{faceDbEntries.length}</span>
-                    <span className="text-xs text-cyber-muted">Faces in tracking database</span>
-                  </div>
-                  <Database className="h-10 w-10 text-cyber-primary" />
-                </div>
-                <div className="mt-4">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full" 
-                    onClick={() => {
-                      setActiveTab("facedatabase"); 
-                      loadFaceDatabase();
-                    }}
-                  >
-                    Manage Face Database
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card className="border-cyber-primary/20 bg-cyber-dark">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg font-semibold">Video Analysis</CardTitle>
-                <CardDescription>AI-powered face matching</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <span className="text-2xl font-bold">{matchResults.length}</span>
-                    <span className="text-xs text-cyber-muted">Matches in current session</span>
-                  </div>
-                  <Shield className="h-10 w-10 text-cyber-primary" />
-                </div>
-                <div className="mt-4">
-                  <Button 
-                    variant="default" 
-                    size="sm" 
-                    className="w-full" 
-                    onClick={() => setActiveTab("detection")}
-                  >
-                    Start Video Analysis
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-          
-          <Tabs defaultValue="detection" value={activeTab} onValueChange={handleTabChange} className="mb-6">
-            <TabsList className="grid w-full grid-cols-4 lg:w-auto">
-              <TabsTrigger value="detection">Detection Tool</TabsTrigger>
-              <TabsTrigger value="facedatabase">Add Face</TabsTrigger>
-              <TabsTrigger value="database">Face Database</TabsTrigger>
-              <TabsTrigger value="analytics">Analytics</TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="detection" className="mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="border-cyber-primary/20 bg-cyber-dark">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold">Video Analyzer</CardTitle>
-                    <CardDescription>Upload video to detect faces</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...videoAnalysisForm}>
-                      <form onSubmit={videoAnalysisForm.handleSubmit(analyzeVideo)} className="space-y-4">
-                        <div className="bg-cyber-background/30 border border-dashed border-cyber-primary/20 rounded-md p-6 flex flex-col items-center justify-center">
-                          <Video className="h-12 w-12 text-cyber-primary mb-2" />
-                          <p className="text-sm text-center text-cyber-muted">
-                            {videoFilename ? videoFilename : "Drop video files here or click to upload"}
-                          </p>
-                          <div className="flex gap-2 mt-4">
-                            <Button 
-                              type="button" 
-                              variant="default" 
-                              size="sm"
-                              onClick={() => document.getElementById('video-upload')?.click()}
-                            >
-                              Select Video
-                            </Button>
-                            <input
-                              id="video-upload"
-                              type="file"
-                              accept="video/*"
-                              onChange={handleVideoUpload}
-                              className="hidden"
-                            />
-                          </div>
-                        </div>
-                        
-                        <FormField
-                          control={videoAnalysisForm.control}
-                          name="caseNumber"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Case Number (Optional)</FormLabel>
-                              <FormControl>
-                                <Input placeholder="e.g., CC-2024-0123" {...field} />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={videoAnalysisForm.control}
-                          name="notes"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Analysis Notes (Optional)</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Add any notes relevant to this video analysis"
-                                  className="h-20"
-                                  {...field}
+                <Tabs defaultValue="tool" className="w-full">
+                  <TabsList className="grid w-full md:w-auto grid-cols-3 gap-2">
+                    <TabsTrigger value="tool">Detection Tool</TabsTrigger>
+                    <TabsTrigger value="database">
+                      <Link to="/face-database" className="w-full h-full flex items-center justify-center">
+                        Face Database
+                      </Link>
+                    </TabsTrigger>
+                    <TabsTrigger value="analytics">Analytics</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="tool" className="mt-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <div>
+                        <Card className="border-cyber-primary/20 bg-cyber-dark mb-4">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-lg">Upload Content</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="border-2 border-dashed border-cyber-primary/20 rounded-lg p-6 text-center">
+                                <Upload className="h-10 w-10 text-cyber-primary/50 mx-auto mb-2" />
+                                <p className="text-sm text-cyber-muted mb-2">Drag and drop files here or click to browse</p>
+                                <Input
+                                  type="file"
+                                  accept="image/*,video/*"
+                                  onChange={handleFileChange}
+                                  className="hidden"
+                                  id="file-upload"
+                                  disabled={isAnalyzing}
                                 />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <Button 
-                          type="submit" 
-                          className="w-full"
-                          disabled={analyzing || !videoFile}
-                        >
-                          {analyzing ? "Analyzing..." : "Analyze Video"}
-                        </Button>
-                        
-                        {analyzing && (
-                          <div className="mt-2">
-                            <div className="flex justify-between text-xs mb-1">
-                              <span>Analysis Progress</span>
-                              <span>{Math.round(analysisProgress)}%</span>
-                            </div>
-                            <Progress value={analysisProgress} className="h-1.5" />
-                          </div>
-                        )}
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-cyber-primary/20 bg-cyber-dark">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold">Analysis Results</CardTitle>
-                    <CardDescription>
-                      {matchResults.length > 0 
-                        ? `${matchResults.length} matches found` 
-                        : "No results yet"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    {matchResults.length > 0 ? (
-                      <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2">
-                        {matchResults.map((match, idx) => (
-                          <Card key={idx} className="bg-cyber-background/60 border-cyber-primary/10">
-                            <CardContent className="p-4">
-                              <div className="flex items-center gap-3">
-                                <div className="w-16 h-16 rounded-md overflow-hidden border border-cyber-primary/20">
-                                  <img 
-                                    src={match.faceImageUrl} 
-                                    alt={match.name} 
-                                    className="w-full h-full object-cover"
+                                <Button asChild variant="outline" disabled={isAnalyzing}>
+                                  <label htmlFor="file-upload" className="cursor-pointer">
+                                    <Upload className="h-4 w-4 mr-2" />
+                                    Browse Files
+                                  </label>
+                                </Button>
+                              </div>
+                              
+                              <div>
+                                <Label htmlFor="url-input">Or enter URL</Label>
+                                <div className="flex space-x-2 mt-1">
+                                  <Input
+                                    id="url-input"
+                                    placeholder="https://example.com/image.jpg"
+                                    onChange={handleUrlInput}
+                                    value={imageUrl}
+                                    disabled={isAnalyzing}
+                                    className="flex-1"
                                   />
                                 </div>
-                                <div className="flex-1">
-                                  <div className="flex justify-between items-start">
-                                    <div>
-                                      <h4 className="font-medium">{match.name}</h4>
-                                      <p className="text-xs text-cyber-muted">Age: {match.age} | Crime: {match.crime}</p>
-                                    </div>
-                                    <Badge className={`${match.confidence > 95 ? 'bg-green-600' : 'bg-amber-600'}`}>
-                                      {match.confidence}%
-                                    </Badge>
+                              </div>
+                              
+                              <div className="flex space-x-2">
+                                <Button 
+                                  onClick={analyzeContent} 
+                                  disabled={isAnalyzing || (!file && !imageUrl)}
+                                  className="w-full"
+                                >
+                                  {isAnalyzing ? 'Analyzing...' : 'Analyze Content'}
+                                </Button>
+                                <Button 
+                                  variant="outline" 
+                                  onClick={resetAnalysis}
+                                  disabled={isAnalyzing}
+                                  className="flex-shrink-0"
+                                >
+                                  Reset
+                                </Button>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        {(isAnalyzing || analysisComplete) && (
+                          <Card className="border-cyber-primary/20 bg-cyber-dark">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-lg">Analysis Results</CardTitle>
+                            </CardHeader>
+                            <CardContent>
+                              {isAnalyzing ? (
+                                <div className="space-y-4">
+                                  <p className="text-sm text-cyber-muted">Analyzing content for signs of manipulation...</p>
+                                  <Progress value={detectionProgress} className="h-2" />
+                                  <div className="text-sm text-cyber-muted flex justify-between">
+                                    <span>Face detection</span>
+                                    <span>Neural analysis</span>
+                                    <span>Final score</span>
                                   </div>
-                                  <div className="mt-1 flex justify-between text-xs">
-                                    <span className="text-cyber-muted">Timestamp: {match.timestamp}</span>
-                                    <Button variant="link" size="sm" className="h-auto p-0 text-xs">
-                                      View Details
+                                </div>
+                              ) : analysisComplete && (
+                                <div className="space-y-4">
+                                  <div className="flex items-center justify-between">
+                                    <div className="flex items-center">
+                                      {deepfakeScore > 70 ? (
+                                        <div className="flex items-center">
+                                          <X className="h-5 w-5 text-red-500 mr-2" />
+                                          <span className="font-semibold">Likely Deepfake</span>
+                                        </div>
+                                      ) : deepfakeScore > 40 ? (
+                                        <div className="flex items-center">
+                                          <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
+                                          <span className="font-semibold">Possible Deepfake</span>
+                                        </div>
+                                      ) : (
+                                        <div className="flex items-center">
+                                          <Check className="h-5 w-5 text-green-500 mr-2" />
+                                          <span className="font-semibold">Likely Authentic</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    <span className={`text-xl font-bold ${
+                                      deepfakeScore > 70 ? 'text-red-500' : 
+                                      deepfakeScore > 40 ? 'text-amber-500' : 
+                                      'text-green-500'
+                                    }`}>
+                                      {deepfakeScore}%
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="bg-cyber-background/30 p-4 rounded-md">
+                                    <h4 className="font-medium mb-2">Detection Results</h4>
+                                    <div className="space-y-3">
+                                      <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                          <span>Face inconsistencies</span>
+                                          <span>{Math.round(deepfakeScore * 0.8)}%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-cyber-background rounded-full overflow-hidden">
+                                          <div className="h-full bg-cyber-primary" style={{ width: `${deepfakeScore * 0.8}%` }}></div>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                          <span>Background artifacts</span>
+                                          <span>{Math.round(deepfakeScore * 0.6)}%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-cyber-background rounded-full overflow-hidden">
+                                          <div className="h-full bg-cyber-primary" style={{ width: `${deepfakeScore * 0.6}%` }}></div>
+                                        </div>
+                                      </div>
+                                      <div>
+                                        <div className="flex justify-between text-sm mb-1">
+                                          <span>Neural pattern detection</span>
+                                          <span>{Math.round(deepfakeScore * 1.1)}%</span>
+                                        </div>
+                                        <div className="h-1.5 w-full bg-cyber-background rounded-full overflow-hidden">
+                                          <div className="h-full bg-cyber-primary" style={{ width: `${Math.min(100, deepfakeScore * 1.1)}%` }}></div>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  
+                                  <div className="flex justify-between">
+                                    <Button variant="outline" onClick={resetAnalysis}>
+                                      New Analysis
                                     </Button>
+                                    {deepfakeScore > 40 && (
+                                      <Button asChild>
+                                        <Link to="/face-database">
+                                          <UserCheck className="h-4 w-4 mr-2" />
+                                          Add to Database
+                                        </Link>
+                                      </Button>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </CardContent>
+                          </Card>
+                        )}
+                      </div>
+                      
+                      <div>
+                        {imageUrl ? (
+                          <Card className="border-cyber-primary/20 bg-cyber-dark h-full">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-lg">Preview</CardTitle>
+                            </CardHeader>
+                            <CardContent className="flex items-center justify-center p-2">
+                              <div className="rounded overflow-hidden max-h-[500px] bg-black flex items-center justify-center">
+                                {file?.type.startsWith('video/') ? (
+                                  <video 
+                                    src={imageUrl} 
+                                    controls 
+                                    className="max-w-full max-h-full object-contain"
+                                  />
+                                ) : (
+                                  <img 
+                                    src={imageUrl} 
+                                    alt="Content preview" 
+                                    className="max-w-full max-h-[500px] object-contain"
+                                  />
+                                )}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        ) : (
+                          <Card className="border-cyber-primary/20 bg-cyber-dark h-full">
+                            <CardHeader className="pb-2">
+                              <CardTitle className="text-lg">Content Preview</CardTitle>
+                            </CardHeader>
+                            <CardContent className="h-full flex flex-col items-center justify-center p-6 text-center">
+                              <div className="bg-cyber-background/30 p-6 rounded-lg w-full max-w-md">
+                                <div className="flex justify-center mb-4">
+                                  <div className="rounded-full bg-cyber-primary/10 p-4">
+                                    {file?.type.startsWith('video/') ? (
+                                      <Video className="h-12 w-12 text-cyber-primary" />
+                                    ) : (
+                                      <ImageIcon className="h-12 w-12 text-cyber-primary" />
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-cyber-muted">No content selected for analysis</p>
+                                <p className="text-sm text-cyber-muted mt-2">Upload a file or enter a URL to begin deepfake detection</p>
+                              </div>
+                              <div className="mt-8 max-w-lg">
+                                <h3 className="text-lg font-medium mb-2">How it works</h3>
+                                <p className="text-sm text-cyber-muted mb-4">
+                                  Our deepfake detection technology uses advanced neural networks to analyze content for signs of manipulation. The system checks for inconsistencies in facial features, lighting, and background artifacts that may indicate AI-generated or manipulated content.
+                                </p>
+                                <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                                  <div className="bg-cyber-background/30 p-3 rounded">
+                                    <div className="flex justify-center mb-2">
+                                      <ImageIcon className="h-5 w-5 text-cyber-primary" />
+                                    </div>
+                                    <p>Upload content</p>
+                                  </div>
+                                  <div className="bg-cyber-background/30 p-3 rounded">
+                                    <div className="flex justify-center mb-2">
+                                      <Camera className="h-5 w-5 text-cyber-primary" />
+                                    </div>
+                                    <p>AI analysis</p>
+                                  </div>
+                                  <div className="bg-cyber-background/30 p-3 rounded">
+                                    <div className="flex justify-center mb-2">
+                                      <Check className="h-5 w-5 text-cyber-primary" />
+                                    </div>
+                                    <p>View results</p>
                                   </div>
                                 </div>
                               </div>
                             </CardContent>
                           </Card>
-                        ))}
+                        )}
                       </div>
-                    ) : analyzing ? (
-                      <div className="flex flex-col items-center justify-center h-80">
-                        <div className="relative">
-                          <Video className="h-16 w-16 text-cyber-primary/40 animate-pulse" />
-                          <div className="absolute inset-0 cyber-glow opacity-50 blur-sm rounded-full"></div>
-                        </div>
-                        <p className="text-center mt-4 text-cyber-muted">
-                          Analyzing video frames...<br />
-                          Matching against {faceDbEntries.length} known faces
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="text-center p-6 h-80 flex flex-col items-center justify-center">
-                        <Shield className="h-16 w-16 text-cyber-primary mx-auto mb-4" />
-                        <p className="text-cyber-muted">Upload video to see detection results</p>
-                        <p className="text-xs text-cyber-muted mt-2">
-                          Our AI analyzes video frames for known faces and deepfake artifacts
-                        </p>
-                      </div>
-                    )}
-                  </CardContent>
-                  {matchResults.length > 0 && (
-                    <CardFooter className="px-6 py-3 bg-cyber-background/20 flex justify-between">
-                      <span className="text-xs text-cyber-muted">
-                        Analysis completed at {new Date().toLocaleTimeString()}
-                      </span>
-                      <Button variant="outline" size="sm" onClick={() => setMatchResults([])}>
-                        Clear Results
-                      </Button>
-                    </CardFooter>
-                  )}
-                </Card>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="facedatabase" className="mt-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Card className="border-cyber-primary/20 bg-cyber-dark">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold">Add Face to Database</CardTitle>
-                    <CardDescription>Enter details for tracking</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Form {...faceEntryForm}>
-                      <form onSubmit={faceEntryForm.handleSubmit(onFaceEntrySubmit)} className="space-y-4">
-                        <div className="flex flex-col items-center justify-center mb-4">
-                          <div 
-                            className="w-32 h-32 rounded-md border-2 border-dashed border-cyber-primary/20 mb-2 flex items-center justify-center overflow-hidden"
-                            onClick={() => document.getElementById('face-image-upload')?.click()}
-                          >
-                            {faceImagePreview ? (
-                              <img 
-                                src={faceImagePreview} 
-                                alt="Face Preview" 
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <User className="h-12 w-12 text-cyber-primary/50" />
-                            )}
-                          </div>
-                          <Button 
-                            type="button" 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => document.getElementById('face-image-upload')?.click()}
-                          >
-                            Upload Face Image
-                          </Button>
-                          <input
-                            id="face-image-upload"
-                            type="file"
-                            accept="image/*"
-                            onChange={handleFaceImageUpload}
-                            className="hidden"
-                          />
-                          <p className="text-xs text-cyber-muted mt-1">
-                            JPG, PNG or WEBP, max 5MB
+                    </div>
+                  </TabsContent>
+
+                  <TabsContent value="database" className="mt-6">
+                    <Card className="border-cyber-primary/20 bg-cyber-dark">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <Database className="h-5 w-5 text-cyber-primary" />
+                          Face Database
+                        </CardTitle>
+                        <CardDescription>
+                          Access our database of known deepfake creators and suspicious individuals
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="py-6">
+                        <div className="flex flex-col items-center justify-center p-8 text-center">
+                          <Database className="h-16 w-16 text-cyber-primary/50 mb-4" />
+                          <h3 className="text-xl font-medium mb-2">View Face Database</h3>
+                          <p className="text-sm text-cyber-muted max-w-md mb-6">
+                            Our face database contains records of individuals identified in deepfake content
+                            and those suspected of creating manipulated media.
                           </p>
+                          <Button asChild size="lg">
+                            <Link to="/face-database">
+                              <UserCheck className="h-4 w-4 mr-2" />
+                              Go to Face Database
+                            </Link>
+                          </Button>
                         </div>
-                        
-                        <FormField
-                          control={faceEntryForm.control}
-                          name="name"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Full Name</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Full name" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={faceEntryForm.control}
-                          name="age"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Age</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Age" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={faceEntryForm.control}
-                          name="crime"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Crime Details</FormLabel>
-                              <FormControl>
-                                <Input placeholder="Type of crime" {...field} />
-                              </FormControl>
-                              <FormMessage />
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <FormField
-                          control={faceEntryForm.control}
-                          name="notes"
-                          render={({ field }) => (
-                            <FormItem>
-                              <FormLabel>Additional Notes</FormLabel>
-                              <FormControl>
-                                <Textarea 
-                                  placeholder="Any additional relevant information"
-                                  className="h-20"
-                                  {...field}
-                                />
-                              </FormControl>
-                            </FormItem>
-                          )}
-                        />
-                        
-                        <Button 
-                          type="submit" 
-                          className="w-full"
-                          disabled={!faceImage}
-                        >
-                          Add to Database
-                        </Button>
-                      </form>
-                    </Form>
-                  </CardContent>
-                </Card>
-                
-                <Card className="border-cyber-primary/20 bg-cyber-dark">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-lg font-semibold">Database Guidelines</CardTitle>
-                    <CardDescription>Best practices for face entries</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="bg-cyber-background/30 rounded-md p-4">
-                        <h4 className="font-medium mb-2 flex items-center gap-1">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          Image Quality
-                        </h4>
-                        <p className="text-sm text-cyber-muted">
-                          Use clear, frontal face images with good lighting. Avoid blurry images, extreme angles, or heavy filters.
-                        </p>
-                      </div>
-                      
-                      <div className="bg-cyber-background/30 rounded-md p-4">
-                        <h4 className="font-medium mb-2 flex items-center gap-1">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          Accurate Information
-                        </h4>
-                        <p className="text-sm text-cyber-muted">
-                          Provide precise details including full legal name, accurate age, and specific crime information for proper identification.
-                        </p>
-                      </div>
-                      
-                      <div className="bg-cyber-background/30 rounded-md p-4">
-                        <h4 className="font-medium mb-2 flex items-center gap-1">
-                          <CheckCircle className="h-4 w-4 text-green-500" />
-                          Multiple Angles
-                        </h4>
-                        <p className="text-sm text-cyber-muted">
-                          When possible, add multiple images of the same person from different angles to improve detection accuracy.
-                        </p>
-                      </div>
-                      
-                      <div className="bg-cyber-background/30 rounded-md p-4">
-                        <h4 className="font-medium mb-2 flex items-center gap-1">
-                          <AlertTriangle className="h-4 w-4 text-amber-500" />
-                          Legal Compliance
-                        </h4>
-                        <p className="text-sm text-cyber-muted">
-                          Ensure all database entries comply with applicable laws and are added only for legitimate law enforcement purposes.
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-            
-            <TabsContent value="database" className="mt-4">
-              <Card className="border-cyber-primary/20 bg-cyber-dark">
-                <CardHeader className="pb-2 flex flex-row items-center justify-between">
-                  <div>
-                    <CardTitle className="text-lg font-semibold">Face Database</CardTitle>
-                    <CardDescription>{faceDbEntries.length} individuals tracked</CardDescription>
-                  </div>
-                  <Button variant="outline" size="sm" onClick={() => setActiveTab("facedatabase")}>
-                    Add New Face
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  {dbLoading ? (
-                    <div className="flex justify-center items-center py-12">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyber-primary"></div>
-                    </div>
-                  ) : faceDbEntries.length === 0 ? (
-                    <div className="text-center py-12">
-                      <Database className="h-12 w-12 text-cyber-primary/40 mx-auto mb-3" />
-                      <p className="text-cyber-muted">No faces in database yet</p>
-                      <Button 
-                        variant="default" 
-                        size="sm" 
-                        className="mt-3"
-                        onClick={() => setActiveTab("facedatabase")}
-                      >
-                        Add First Face
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
-                      {faceDbEntries.map((entry) => (
-                        <Card key={entry.id} className="bg-cyber-background/60 border-cyber-primary/10">
-                          <CardContent className="p-4">
-                            <div className="flex items-center gap-3">
-                              <div className="w-16 h-16 rounded-md overflow-hidden border border-cyber-primary/20">
-                                <img 
-                                  src={entry.face_url} 
-                                  alt={entry.name} 
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="flex-1">
-                                <div className="flex justify-between items-start">
-                                  <div>
-                                    <h4 className="font-medium">{entry.name}</h4>
-                                    <p className="text-xs text-cyber-muted">Age: {entry.age} | Crime: {entry.crime}</p>
-                                  </div>
-                                  <div className="text-xs text-cyber-muted">
-                                    Added: {new Date(entry.created_at).toLocaleDateString()}
-                                  </div>
-                                </div>
-                                <div className="mt-2 flex justify-end gap-2">
-                                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs">
-                                    Edit
-                                  </Button>
-                                  <Button variant="outline" size="sm" className="h-7 px-2 text-xs text-red-500 hover:text-red-400">
-                                    Delete
-                                  </Button>
-                                </div>
-                              </div>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+
+                  <TabsContent value="analytics" className="mt-6">
+                    <Card className="border-cyber-primary/20 bg-cyber-dark">
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart4 className="h-5 w-5 text-cyber-primary" />
+                          Deepfake Analytics
+                        </CardTitle>
+                        <CardDescription>
+                          Statistics and trends in deepfake detection
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                          <Card className="bg-cyber-background/30 p-4">
+                            <h3 className="font-medium mb-1">Total Scans</h3>
+                            <p className="text-3xl font-bold">432</p>
+                            <p className="text-xs text-muted-foreground mt-1">Last 30 days</p>
+                          </Card>
+                          <Card className="bg-cyber-background/30 p-4">
+                            <h3 className="font-medium mb-1">Deepfakes Detected</h3>
+                            <p className="text-3xl font-bold">87</p>
+                            <p className="text-xs text-muted-foreground mt-1">High confidence detections</p>
+                          </Card>
+                          <Card className="bg-cyber-background/30 p-4">
+                            <h3 className="font-medium mb-1">Detection Rate</h3>
+                            <p className="text-3xl font-bold">20.1%</p>
+                            <p className="text-xs text-muted-foreground mt-1">Of all analyzed content</p>
+                          </Card>
+                        </div>
+
+                        <h3 className="font-medium mb-4">Detection Trends</h3>
+                        <div className="bg-cyber-background/30 p-4 rounded-lg mb-6">
+                          <div className="h-[200px] flex items-end justify-between gap-2">
+                            {[35, 42, 58, 45, 61, 85, 73, 92, 81, 75, 68, 56].map((value, i) => (
+                              <div 
+                                key={i} 
+                                className="bg-cyber-primary w-full rounded-t" 
+                                style={{ height: `${value}%` }}
+                                title={`Month ${i+1}: ${value}%`}
+                              ></div>
+                            ))}
+                          </div>
+                          <div className="flex justify-between mt-2 text-xs text-cyber-muted">
+                            <span>Jan</span>
+                            <span>Feb</span>
+                            <span>Mar</span>
+                            <span>Apr</span>
+                            <span>May</span>
+                            <span>Jun</span>
+                            <span>Jul</span>
+                            <span>Aug</span>
+                            <span>Sep</span>
+                            <span>Oct</span>
+                            <span>Nov</span>
+                            <span>Dec</span>
+                          </div>
+                        </div>
+
+                        <h3 className="font-medium mb-4">Deepfake Categories</h3>
+                        <div className="space-y-3">
+                          <div className="w-full">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">Political figures</span>
+                              <span className="text-sm">42%</span>
                             </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
-            
-            <TabsContent value="analytics">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <StatisticsChart 
-                  title="Deepfake by Type" 
-                  data={deepfakeTypeData} 
-                />
-                
-                <Card className="border-cyber-primary/20 bg-cyber-dark">
-                  <CardHeader>
-                    <CardTitle>Detection Metrics</CardTitle>
-                    <CardDescription>Performance of the deepfake detection model</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Accuracy</span>
-                          <span className="text-sm font-medium">94.2%</span>
+                            <div className="h-2 w-full bg-cyber-background rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-cyber-primary" 
+                                style={{ width: '42%' }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="w-full">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">Celebrities</span>
+                              <span className="text-sm">27%</span>
+                            </div>
+                            <div className="h-2 w-full bg-cyber-background rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-cyber-primary" 
+                                style={{ width: '27%' }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="w-full">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">Public officials</span>
+                              <span className="text-sm">18%</span>
+                            </div>
+                            <div className="h-2 w-full bg-cyber-background rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-cyber-primary" 
+                                style={{ width: '18%' }}
+                              ></div>
+                            </div>
+                          </div>
+                          <div className="w-full">
+                            <div className="flex justify-between mb-1">
+                              <span className="text-sm">Unknown individuals</span>
+                              <span className="text-sm">13%</span>
+                            </div>
+                            <div className="h-2 w-full bg-cyber-background rounded-full overflow-hidden">
+                              <div 
+                                className="h-full bg-cyber-primary" 
+                                style={{ width: '13%' }}
+                              ></div>
+                            </div>
+                          </div>
                         </div>
-                        <Progress value={94.2} className="h-2" indicatorClassName="bg-green-500" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Precision</span>
-                          <span className="text-sm font-medium">92.7%</span>
-                        </div>
-                        <Progress value={92.7} className="h-2" indicatorClassName="bg-blue-500" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">Recall</span>
-                          <span className="text-sm font-medium">90.3%</span>
-                        </div>
-                        <Progress value={90.3} className="h-2" indicatorClassName="bg-purple-500" />
-                      </div>
-                      <div>
-                        <div className="flex justify-between mb-1">
-                          <span className="text-sm">F1 Score</span>
-                          <span className="text-sm font-medium">91.5%</span>
-                        </div>
-                        <Progress value={91.5} className="h-2" indicatorClassName="bg-amber-500" />
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            </TabsContent>
-          </Tabs>
+                      </CardContent>
+                    </Card>
+                  </TabsContent>
+                </Tabs>
+              </CardContent>
+            </Card>
+          </div>
         </main>
       </div>
     </div>
