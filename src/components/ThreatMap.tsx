@@ -3,18 +3,18 @@ import { useEffect, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 const THREATS = [
-  { lat: 40.7128, lng: -74.006, type: "phishing", severity: "high" },
-  { lat: 34.0522, lng: -118.2437, type: "ransomware", severity: "critical" },
-  { lat: 51.5074, lng: -0.1278, type: "fraud", severity: "medium" },
-  { lat: 48.8566, lng: 2.3522, type: "social", severity: "low" },
-  { lat: 35.6762, lng: 139.6503, type: "phishing", severity: "high" },
-  { lat: 22.3193, lng: 114.1694, type: "voip", severity: "medium" },
-  { lat: 19.0760, lng: 72.8777, type: "upi", severity: "high" },
-  { lat: 28.6139, lng: 77.2090, type: "sim", severity: "medium" },
-  { lat: 39.9042, lng: 116.4074, type: "deepfake", severity: "critical" },
-  { lat: -33.8688, lng: 151.2093, type: "fraud", severity: "low" },
-  { lat: 55.7558, lng: 37.6173, type: "ransomware", severity: "high" },
-  { lat: -22.9068, lng: -43.1729, type: "phishing", severity: "medium" },
+  { lat: 30.7333, lng: 76.7794, type: "phishing", severity: "high", location: "Chandigarh" },
+  { lat: 28.6139, lng: 77.2090, type: "ransomware", severity: "critical", location: "Delhi" },
+  { lat: 19.0760, lng: 72.8777, type: "fraud", severity: "medium", location: "Mumbai" },
+  { lat: 12.9716, lng: 77.5946, type: "social", severity: "low", location: "Bangalore" },
+  { lat: 22.5726, lng: 88.3639, type: "phishing", severity: "high", location: "Kolkata" },
+  { lat: 17.3850, lng: 78.4867, type: "voip", severity: "medium", location: "Hyderabad" },
+  { lat: 13.0827, lng: 80.2707, type: "upi", severity: "high", location: "Chennai" },
+  { lat: 23.0225, lng: 72.5714, type: "sim", severity: "medium", location: "Ahmedabad" },
+  { lat: 26.9124, lng: 75.7873, type: "deepfake", severity: "critical", location: "Jaipur" },
+  { lat: 25.5941, lng: 85.1376, type: "fraud", severity: "low", location: "Patna" },
+  { lat: 18.5204, lng: 73.8567, type: "ransomware", severity: "high", location: "Pune" },
+  { lat: 22.2587, lng: 71.1924, type: "phishing", severity: "medium", location: "Gujarat" },
 ];
 
 const severityColors = {
@@ -45,7 +45,7 @@ export function ThreatMap() {
     window.addEventListener("resize", updateCanvasSize);
     updateCanvasSize();
 
-    // Draw the world map (simplified)
+    // Draw India map (simplified)
     function drawMap() {
       const width = canvas.width / window.devicePixelRatio;
       const height = canvas.height / window.devicePixelRatio;
@@ -77,8 +77,37 @@ export function ThreatMap() {
         ctx.stroke();
       }
 
-      // Draw simplified continents (just for visual effect)
+      // Draw simplified India outline (just for visual effect)
       ctx.fillStyle = "#1e2334";
+      
+      // Draw India's simplified outline
+      const indiaPath = new Path2D();
+      // This is a very simplified path for India
+      const centerLat = 22; // Rough center of India
+      const centerLng = 78; // Rough center of India
+      const scale = 3.5; // Scale to make India visible
+      
+      // This is very rough, you'd want a proper GeoJSON for production
+      ctx.beginPath();
+      ctx.fillStyle = "#1e2334";
+      const indiaX = ((centerLng + 180) / 360) * width;
+      const indiaY = ((90 - centerLat) / 180) * height;
+      ctx.ellipse(indiaX, indiaY, width/6, height/8, 0, 0, Math.PI * 2);
+      ctx.fill();
+      
+      // Highlight Chandigarh
+      const chandigarhLng = 76.7794;
+      const chandigarhLat = 30.7333;
+      const chandigarhX = ((chandigarhLng + 180) / 360) * width;
+      const chandigarhY = ((90 - chandigarhLat) / 180) * height;
+      
+      ctx.beginPath();
+      ctx.arc(chandigarhX, chandigarhY, 6, 0, Math.PI * 2);
+      ctx.fillStyle = "#8B5CF6";
+      ctx.fill();
+      ctx.strokeStyle = "#fff";
+      ctx.lineWidth = 1;
+      ctx.stroke();
       
       // Draw threat points
       THREATS.forEach((threat) => {
@@ -136,7 +165,7 @@ export function ThreatMap() {
   return (
     <Card className="col-span-full border-cyber-primary/20 bg-cyber-dark">
       <CardHeader className="pb-2">
-        <CardTitle className="text-lg font-semibold">Global Threat Map</CardTitle>
+        <CardTitle className="text-lg font-semibold">India Threat Map</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
         <div className="h-[300px] w-full relative">
@@ -151,6 +180,9 @@ export function ThreatMap() {
                 <span className="capitalize">{severity}</span>
               </div>
             ))}
+          </div>
+          <div className="absolute top-3 left-3 bg-black/50 p-2 rounded text-xs">
+            <div className="text-white">Chandigarh Police Cybercrime Cell</div>
           </div>
         </div>
       </CardContent>

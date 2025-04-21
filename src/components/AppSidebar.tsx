@@ -13,6 +13,7 @@ import {
   Settings,
   ChevronLeft,
   ChevronRight,
+  User,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -64,6 +65,11 @@ const menuItems = [
     title: "SIM Fraud Detection",
     icon: ShieldCheck,
     path: "/sim-fraud",
+  },
+  {
+    title: "Profile",
+    icon: User,
+    path: "/profile",
   },
   {
     title: "Settings",

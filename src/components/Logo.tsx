@@ -16,7 +16,7 @@ export function Logo({ className, showText = true }: LogoProps) {
       </div>
       {showText && (
         <span className="font-bold text-xl tracking-tight cyber-highlight">
-          AI Shield
+          AI सुरक्षा कवच
         </span>
       )}
     </div>
