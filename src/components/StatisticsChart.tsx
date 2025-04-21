@@ -43,7 +43,7 @@ export function StatisticsChart({ title, data, dataKey = "value" }: StatisticsCh
               />
               <Bar
                 dataKey={dataKey}
-                fill={({ fill }) => fill || "#8B5CF6"}
+                fill="#8B5CF6" 
                 radius={[4, 4, 0, 0]}
               />
             </BarChart>
