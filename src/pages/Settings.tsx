@@ -1,47 +1,78 @@
-
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+  CardFooter,
+} from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Settings as SettingsIcon, User, Headphones, Bell, Shield, Lock, Database } from "lucide-react";
+import {
+  Settings as SettingsIcon,
+  User,
+  Headphones,
+  Bell,
+  Shield,
+  Lock,
+  Database,
+} from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { useForm } from "react-hook-form";
-import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+
+type ProfileFormValues = {
+  name: string;
+  badge: string;
+  email: string;
+  phone: string;
+  department: string;
+  bio: string;
+};
 
 export default function Settings() {
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Create profile form using react-hook-form
-  const profileForm = useForm({
+
+  const profileForm = useForm<ProfileFormValues>({
     defaultValues: {
       name: "Officer Name",
       badge: "CP2345",
       email: "officer@cybercell.gov.in",
       phone: "+91 98XXX XXXXX",
       department: "Cyber Crime Investigation",
-      bio: ""
-    }
+      bio: "",
+    },
   });
 
-  // Handle profile form submission
-  const onProfileSubmit = async (data) => {
+  const onProfileSubmit = async (data: ProfileFormValues) => {
     setIsLoading(true);
     try {
-      // Get current user
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+      if (sessionError) throw sessionError;
       const userId = session?.user?.id;
 
       if (userId) {
-        // Update profile in supabase
         const { error } = await supabase
-          .from('profiles')
+          .from("profiles")
           .upsert({
             id: userId,
             full_name: data.name,
@@ -49,24 +80,25 @@ export default function Settings() {
             email: data.email,
             phone: data.phone,
             department: data.department,
-            bio: data.bio
-          });
+            bio: data.bio,
+            updated_at: new Date().toISOString(),
+          } as Partial<Database["public"]["Tables"]["profiles"]["Insert"]>);
 
         if (error) throw error;
-        
+
         toast.success("Profile updated successfully", {
-          description: "Your profile information has been saved."
+          description: "Your profile information has been saved.",
         });
       } else {
-        // If we're testing without auth
+        // Demo mode: no user id
         toast.success("Profile updated successfully", {
-          description: "Your profile information has been saved. (Demo mode)"
+          description: "Your profile information has been saved. (Demo mode)",
         });
       }
     } catch (error) {
       console.error("Error updating profile:", error);
       toast.error("Failed to update profile", {
-        description: "Please try again later."
+        description: "Please try again later.",
       });
     } finally {
       setIsLoading(false);
@@ -83,7 +115,7 @@ export default function Settings() {
             <SettingsIcon className="h-6 w-6 text-cyber-primary" />
             <h1 className="text-2xl font-bold">Settings</h1>
           </div>
-          
+
           <Tabs defaultValue="profile" className="mb-6">
             <TabsList className="grid w-full md:w-auto grid-cols-2 md:grid-cols-5 gap-2">
               <TabsTrigger value="profile">Profile</TabsTrigger>
@@ -92,7 +124,7 @@ export default function Settings() {
               <TabsTrigger value="connections">API Connections</TabsTrigger>
               <TabsTrigger value="support">Support</TabsTrigger>
             </TabsList>
-            
+
             <TabsContent value="profile" className="mt-6">
               <div className="grid grid-cols-1 gap-6">
                 <Card className="border-cyber-primary/20 bg-cyber-dark">
@@ -115,7 +147,11 @@ export default function Settings() {
                                 <FormItem>
                                   <FormLabel>Full Name</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="Rahul Kumar Sharma" className="mt-1" />
+                                    <Input
+                                      {...field}
+                                      placeholder="Rahul Kumar Sharma"
+                                      className="mt-1"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -128,14 +164,18 @@ export default function Settings() {
                                 <FormItem>
                                   <FormLabel>Badge ID</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="CHDHACKER" className="mt-1" />
+                                    <Input
+                                      {...field}
+                                      placeholder="CHDHACKER"
+                                      className="mt-1"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <FormField
                               control={profileForm.control}
@@ -144,7 +184,12 @@ export default function Settings() {
                                 <FormItem>
                                   <FormLabel>Email</FormLabel>
                                   <FormControl>
-                                    <Input {...field} type="email" placeholder="Rahulkumarsharma@cybercell.gov.in" className="mt-1" />
+                                    <Input
+                                      {...field}
+                                      type="email"
+                                      placeholder="Rahulkumarsharma@cybercell.gov.in"
+                                      className="mt-1"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
@@ -157,14 +202,18 @@ export default function Settings() {
                                 <FormItem>
                                   <FormLabel>Phone</FormLabel>
                                   <FormControl>
-                                    <Input {...field} placeholder="+91 6280838860" className="mt-1" />
+                                    <Input
+                                      {...field}
+                                      placeholder="+91 6280838860"
+                                      className="mt-1"
+                                    />
                                   </FormControl>
                                   <FormMessage />
                                 </FormItem>
                               )}
                             />
                           </div>
-                          
+
                           <FormField
                             control={profileForm.control}
                             name="department"
@@ -186,7 +235,7 @@ export default function Settings() {
                               </FormItem>
                             )}
                           />
-                          
+
                           <FormField
                             control={profileForm.control}
                             name="bio"
@@ -217,7 +266,7 @@ export default function Settings() {
                 </Card>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="security" className="mt-6">
               <div className="grid grid-cols-1 gap-6">
                 <Card className="border-cyber-primary/20 bg-cyber-dark">
@@ -248,7 +297,7 @@ export default function Settings() {
                           <Button className="w-full">Update Password</Button>
                         </div>
                       </div>
-                      
+
                       <div className="pt-4 border-t border-cyber-primary/10">
                         <h3 className="text-lg font-medium mb-4">Two-Factor Authentication</h3>
                         <div className="flex items-center justify-between">
@@ -259,7 +308,7 @@ export default function Settings() {
                           <Switch id="2fa" />
                         </div>
                       </div>
-                      
+
                       <div className="pt-4 border-t border-cyber-primary/10">
                         <h3 className="text-lg font-medium mb-4">Login History</h3>
                         <div className="space-y-2">
@@ -288,7 +337,7 @@ export default function Settings() {
                 </Card>
               </div>
             </TabsContent>
-            
+
             <TabsContent value="notifications" className="mt-6">
               <Card className="border-cyber-primary/20 bg-cyber-dark">
                 <CardHeader>
@@ -326,7 +375,7 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="pt-4 border-t border-cyber-primary/10">
                       <h3 className="text-lg font-medium mb-4">SMS Notifications</h3>
                       <div className="space-y-3">
@@ -346,7 +395,7 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="pt-4 border-t border-cyber-primary/10">
                       <h3 className="text-lg font-medium mb-4">In-App Notifications</h3>
                       <div className="space-y-3">
@@ -373,7 +422,7 @@ export default function Settings() {
                 </CardFooter>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="connections" className="mt-6">
               <Card className="border-cyber-primary/20 bg-cyber-dark">
                 <CardHeader>
@@ -401,7 +450,7 @@ export default function Settings() {
                             <Button variant="outline" size="sm">Configure</Button>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center justify-between p-3 bg-cyber-background/30 rounded">
                           <div className="flex items-center gap-3">
                             <Database className="h-8 w-8 text-cyber-primary" />
@@ -415,7 +464,7 @@ export default function Settings() {
                             <Button variant="outline" size="sm">Configure</Button>
                           </div>
                         </div>
-                        
+
                         <div className="flex items-center justify-between p-3 bg-cyber-background/30 rounded">
                           <div className="flex items-center gap-3">
                             <div className="h-8 w-8 flex items-center justify-center bg-cyber-primary/20 rounded text-cyber-primary">
@@ -433,7 +482,7 @@ export default function Settings() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="pt-4 border-t border-cyber-primary/10">
                       <h3 className="text-lg font-medium mb-4">Add New Connection</h3>
                       <div className="space-y-4">
@@ -459,7 +508,7 @@ export default function Settings() {
                 </CardContent>
               </Card>
             </TabsContent>
-            
+
             <TabsContent value="support" className="mt-6">
               <Card className="border-cyber-primary/20 bg-cyber-dark">
                 <CardHeader>
@@ -494,7 +543,7 @@ export default function Settings() {
                         <Button>Submit Ticket</Button>
                       </div>
                     </div>
-                    
+
                     <div className="pt-4 border-t border-cyber-primary/10">
                       <h3 className="text-lg font-medium mb-4">Support Resources</h3>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
