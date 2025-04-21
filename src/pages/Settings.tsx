@@ -82,7 +82,7 @@ export default function Settings() {
             department: data.department,
             bio: data.bio,
             updated_at: new Date().toISOString(),
-          } as Partial<Database["public"]["Tables"]["profiles"]["Insert"]>);
+          });
 
         if (error) throw error;
 
