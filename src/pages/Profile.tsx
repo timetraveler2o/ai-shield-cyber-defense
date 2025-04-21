@@ -1,10 +1,10 @@
-
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, User, MessageSquare, Clock, FileText, BadgeCheck } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
+import { Badge as BadgeIcon } from "lucide-react";
 
 export default function Profile() {
   return (
@@ -227,7 +227,7 @@ export default function Profile() {
               <Card className="border-cyber-primary/20 bg-cyber-dark">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Badge className="h-5 w-5 text-cyber-primary" />
+                    <BadgeIcon className="h-5 w-5 text-cyber-primary" />
                     Certifications & Training
                   </CardTitle>
                   <CardDescription>Professional qualifications and completed courses</CardDescription>
