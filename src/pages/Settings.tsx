@@ -1,4 +1,5 @@
 
+import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
@@ -8,8 +9,70 @@ import { Settings as SettingsIcon, User, Headphones, Bell, Shield, Lock, Databas
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { useForm } from "react-hook-form";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Textarea } from "@/components/ui/textarea";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Settings() {
+  const [isLoading, setIsLoading] = useState(false);
+  
+  // Create profile form using react-hook-form
+  const profileForm = useForm({
+    defaultValues: {
+      name: "Officer Name",
+      badge: "CP2345",
+      email: "officer@cybercell.gov.in",
+      phone: "+91 98XXX XXXXX",
+      department: "Cyber Crime Investigation",
+      bio: ""
+    }
+  });
+
+  // Handle profile form submission
+  const onProfileSubmit = async (data) => {
+    setIsLoading(true);
+    try {
+      // Get current user
+      const { data: { session } } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+
+      if (userId) {
+        // Update profile in supabase
+        const { error } = await supabase
+          .from('profiles')
+          .upsert({
+            id: userId,
+            full_name: data.name,
+            badge_id: data.badge,
+            email: data.email,
+            phone: data.phone,
+            department: data.department,
+            bio: data.bio
+          });
+
+        if (error) throw error;
+        
+        toast.success("Profile updated successfully", {
+          description: "Your profile information has been saved."
+        });
+      } else {
+        // If we're testing without auth
+        toast.success("Profile updated successfully", {
+          description: "Your profile information has been saved. (Demo mode)"
+        });
+      }
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast.error("Failed to update profile", {
+        description: "Please try again later."
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-cyber-background overflow-hidden">
       <AppSidebar />
@@ -40,49 +103,117 @@ export default function Settings() {
                     </CardTitle>
                     <CardDescription>Manage your personal information</CardDescription>
                   </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="name">Full Name</Label>
-                          <Input id="name" className="mt-1" placeholder="Officer Name" />
+                  <Form {...profileForm}>
+                    <form onSubmit={profileForm.handleSubmit(onProfileSubmit)}>
+                      <CardContent>
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={profileForm.control}
+                              name="name"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Full Name</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="Rahul Kumar Sharma" className="mt-1" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={profileForm.control}
+                              name="badge"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Badge ID</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="CHDHACKER" className="mt-1" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <FormField
+                              control={profileForm.control}
+                              name="email"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Email</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} type="email" placeholder="Rahulkumarsharma@cybercell.gov.in" className="mt-1" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                            <FormField
+                              control={profileForm.control}
+                              name="phone"
+                              render={({ field }) => (
+                                <FormItem>
+                                  <FormLabel>Phone</FormLabel>
+                                  <FormControl>
+                                    <Input {...field} placeholder="+91 6280838860" className="mt-1" />
+                                  </FormControl>
+                                  <FormMessage />
+                                </FormItem>
+                              )}
+                            />
+                          </div>
+                          
+                          <FormField
+                            control={profileForm.control}
+                            name="department"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Department</FormLabel>
+                                <FormControl>
+                                  <select
+                                    {...field}
+                                    className="w-full mt-1 bg-cyber-background border border-cyber-primary/20 rounded p-2"
+                                  >
+                                    <option>Cyber Crime Investigation</option>
+                                    <option>Digital Forensics</option>
+                                    <option>Intelligence</option>
+                                    <option>Administration</option>
+                                  </select>
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                          
+                          <FormField
+                            control={profileForm.control}
+                            name="bio"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Bio</FormLabel>
+                                <FormControl>
+                                  <Textarea
+                                    {...field}
+                                    rows={3}
+                                    className="w-full mt-1 bg-cyber-background border border-cyber-primary/20 rounded p-2"
+                                    placeholder="Brief description about yourself"
+                                  />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
                         </div>
-                        <div>
-                          <Label htmlFor="badge">Badge ID</Label>
-                          <Input id="badge" className="mt-1" placeholder="CP2345" />
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                          <Label htmlFor="email">Email</Label>
-                          <Input id="email" className="mt-1" type="email" placeholder="officer@cybercell.gov.in" />
-                        </div>
-                        <div>
-                          <Label htmlFor="phone">Phone</Label>
-                          <Input id="phone" className="mt-1" placeholder="+91 98XXX XXXXX" />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="department">Department</Label>
-                        <select id="department" className="w-full mt-1 bg-cyber-background border border-cyber-primary/20 rounded p-2">
-                          <option>Cyber Crime Investigation</option>
-                          <option>Digital Forensics</option>
-                          <option>Intelligence</option>
-                          <option>Administration</option>
-                        </select>
-                      </div>
-                      
-                      <div>
-                        <Label htmlFor="bio">Bio</Label>
-                        <textarea id="bio" rows={3} className="w-full mt-1 bg-cyber-background border border-cyber-primary/20 rounded p-2" placeholder="Brief description about yourself"></textarea>
-                      </div>
-                    </div>
-                  </CardContent>
-                  <CardFooter className="flex justify-end">
-                    <Button>Save Changes</Button>
-                  </CardFooter>
+                      </CardContent>
+                      <CardFooter className="flex justify-end">
+                        <Button type="submit" disabled={isLoading}>
+                          {isLoading ? "Saving..." : "Save Changes"}
+                        </Button>
+                      </CardFooter>
+                    </form>
+                  </Form>
                 </Card>
               </div>
             </TabsContent>
