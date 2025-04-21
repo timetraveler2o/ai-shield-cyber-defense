@@ -18,7 +18,7 @@ import {
   Bell,
   Shield,
   Lock,
-  Database,
+  Database as DatabaseIcon,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
@@ -427,7 +427,7 @@ export default function Settings() {
               <Card className="border-cyber-primary/20 bg-cyber-dark">
                 <CardHeader>
                   <CardTitle className="flex items-center gap-2">
-                    <Database className="h-5 w-5 text-cyber-primary" />
+                    <DatabaseIcon className="h-5 w-5 text-cyber-primary" />
                     API Connections
                   </CardTitle>
                   <CardDescription>Manage external system integrations</CardDescription>
@@ -453,7 +453,7 @@ export default function Settings() {
 
                         <div className="flex items-center justify-between p-3 bg-cyber-background/30 rounded">
                           <div className="flex items-center gap-3">
-                            <Database className="h-8 w-8 text-cyber-primary" />
+                            <DatabaseIcon className="h-8 w-8 text-cyber-primary" />
                             <div>
                               <p className="font-medium">Banking Fraud API</p>
                               <p className="text-xs text-cyber-muted">Connected since April 2, 2025</p>
