@@ -27,7 +27,7 @@ export function Header({ className }: HeaderProps) {
     >
       <div className="flex items-center space-x-4">
         <h1 className="text-xl font-semibold text-white hidden md:block">
-          चंडीगढ़ पुलिस साइबर अपराध निगरानी केंद्र
+          Chandigarh Police Cyber Crime Monitoring Center
         </h1>
       </div>
 
