@@ -1,11 +1,15 @@
 
+import { useState, useRef } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { BarChart, XAxis, YAxis, Bar, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend } from "recharts";
-import { Mail, Upload, Search, Shield, AlertTriangle } from "lucide-react";
+import { Mail, Upload, Search, Shield, AlertTriangle, FileText } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
 
 // Mock data
 const weeklyData = [
@@ -78,6 +82,92 @@ const riskColors = {
 };
 
 export default function PhishingDetection() {
+  const [analyzing, setAnalyzing] = useState(false);
+  const [emailText, setEmailText] = useState("");
+  const [analysisResult, setAnalysisResult] = useState<null | {
+    risk: "low" | "medium" | "high" | "critical";
+    confidence: number;
+    threats: string[];
+    summary: string;
+  }>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { toast } = useToast();
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // In a real app, parse EXML file
+    // For demo, we'll simulate loading and then set a mock result
+    setAnalyzing(true);
+    toast({
+      title: "File uploaded",
+      description: `Analyzing ${file.name}...`,
+    });
+
+    // Simulate AI analysis delay
+    setTimeout(() => {
+      setAnalyzing(false);
+      setAnalysisResult({
+        risk: "high",
+        confidence: 94.7,
+        threats: ["Suspicious sender domain", "Urgency language", "Suspicious links"],
+        summary: "This email shows multiple signs of a phishing attempt targeting credentials."
+      });
+      toast({
+        title: "Analysis complete",
+        description: "High risk phishing attempt detected",
+        variant: "destructive"
+      });
+    }, 2000);
+  };
+
+  const handleTextAnalysis = () => {
+    if (!emailText.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter email content to analyze",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setAnalyzing(true);
+    toast({
+      title: "Processing",
+      description: "Analyzing email content...",
+    });
+
+    // Simulate AI analysis delay
+    setTimeout(() => {
+      setAnalyzing(false);
+      
+      // Determine risk level based on common phishing terms in the text
+      const phishingTerms = ['urgent', 'verify', 'account', 'password', 'login', 'bank', 'update', 'immediately'];
+      const termCount = phishingTerms.filter(term => emailText.toLowerCase().includes(term)).length;
+      
+      let risk: "low" | "medium" | "high" | "critical" = "low";
+      if (termCount >= 4) risk = "critical";
+      else if (termCount >= 3) risk = "high";
+      else if (termCount >= 2) risk = "medium";
+      
+      setAnalysisResult({
+        risk,
+        confidence: 75 + (termCount * 5),
+        threats: termCount > 0 ? ["Suspicious language patterns", "Potential social engineering"] : ["No obvious threats detected"],
+        summary: termCount > 2 
+          ? "This email contains multiple red flags consistent with phishing attempts." 
+          : "This email appears to be relatively low risk but exercise caution."
+      });
+      
+      toast({
+        title: "Analysis complete",
+        description: `${risk.charAt(0).toUpperCase() + risk.slice(1)} risk assessment completed`,
+        variant: risk === "low" ? "default" : "destructive"
+      });
+    }, 1500);
+  };
+
   return (
     <div className="flex h-screen bg-cyber-background overflow-hidden">
       <AppSidebar />
@@ -90,9 +180,16 @@ export default function PhishingDetection() {
               <p className="text-cyber-muted">Real-time email analysis and threat protection</p>
             </div>
             <div className="flex gap-3 mt-4 md:mt-0">
-              <Button className="flex items-center gap-2">
+              <Button className="flex items-center gap-2" onClick={() => fileInputRef.current?.click()}>
                 <Upload className="h-4 w-4" />
                 <span>Upload EXML</span>
+                <input 
+                  type="file" 
+                  ref={fileInputRef}
+                  className="hidden" 
+                  accept=".eml,.exml,.txt" 
+                  onChange={handleFileUpload}
+                />
               </Button>
               <Button variant="outline" className="flex items-center gap-2">
                 <Search className="h-4 w-4" />
@@ -100,6 +197,87 @@ export default function PhishingDetection() {
               </Button>
             </div>
           </div>
+
+          {analysisResult && (
+            <Card className={`mb-6 border-2 ${
+              analysisResult.risk === 'low' ? 'border-blue-500/50 bg-blue-950/10' :
+              analysisResult.risk === 'medium' ? 'border-yellow-500/50 bg-yellow-950/10' :
+              analysisResult.risk === 'high' ? 'border-orange-500/50 bg-orange-950/10' :
+              'border-cyber-warning/50 bg-red-950/10'
+            }`}>
+              <CardHeader className="pb-2">
+                <CardTitle className="flex items-center gap-2">
+                  <AlertTriangle className={`h-5 w-5 ${
+                    analysisResult.risk === 'low' ? 'text-blue-500' :
+                    analysisResult.risk === 'medium' ? 'text-yellow-500' :
+                    analysisResult.risk === 'high' ? 'text-orange-500' :
+                    'text-cyber-warning'
+                  }`} />
+                  Email Analysis Result
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex flex-col gap-2">
+                    <div className="font-medium text-sm">Risk Assessment</div>
+                    <div className="flex items-center gap-2">
+                      <span className={`px-2 py-1 rounded-full text-xs ${riskColors[analysisResult.risk]}`}>
+                        {analysisResult.risk.toUpperCase()}
+                      </span>
+                      <span className="text-sm text-cyber-muted">
+                        {analysisResult.confidence.toFixed(1)}% confidence
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="font-medium text-sm">Detected Threats</div>
+                    <ul className="text-sm text-cyber-muted space-y-1">
+                      {analysisResult.threats.map((threat, index) => (
+                        <li key={index} className="flex items-center gap-1">
+                          <div className="h-1.5 w-1.5 rounded-full bg-cyber-primary"></div>
+                          {threat}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="flex flex-col gap-2">
+                    <div className="font-medium text-sm">Summary</div>
+                    <p className="text-sm text-cyber-muted">{analysisResult.summary}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          <Card className="mb-6 border-cyber-primary/20 bg-cyber-dark">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg font-semibold">Email Content Analysis</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="md:col-span-2">
+                  <Textarea 
+                    placeholder="Paste email content here for analysis..." 
+                    className="h-32"
+                    value={emailText}
+                    onChange={(e) => setEmailText(e.target.value)}
+                  />
+                </div>
+                <div className="flex flex-col justify-end">
+                  <Button 
+                    className="w-full" 
+                    onClick={handleTextAnalysis}
+                    disabled={analyzing}
+                  >
+                    {analyzing ? "Analyzing..." : "Analyze Email Content"}
+                  </Button>
+                  <div className="mt-2 text-xs text-center text-cyber-muted">
+                    Our AI will scan for phishing indicators and social engineering tactics
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
             <Card className="border-cyber-primary/20 bg-cyber-dark">
