@@ -1,24 +1,14 @@
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
-import { Input } from "@/components/ui/input";
-import { Search } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
 import { Person } from "@/components/face-database/types";
-import { PersonCard } from "@/components/face-database/PersonCard";
-import { PersonForm } from "@/components/face-database/PersonForm";
 import { AnalyticsPanel } from "@/components/face-database/AnalyticsPanel";
 import { useImageUpload } from "@/components/face-database/useImageUpload";
+import { SearchBar } from "@/components/face-database/SearchBar";
+import { DatabaseContent } from "@/components/face-database/DatabaseContent";
+import { DeleteConfirmationDialog } from "@/components/face-database/DeleteConfirmationDialog";
 
 export default function FaceDatabase() {
   const { toast } = useToast();
@@ -214,18 +204,14 @@ export default function FaceDatabase() {
                   <h2 className="text-xl font-semibold">
                     Facial Recognition System for Missing Persons
                   </h2>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-                    <Input
-                      className="pl-10 w-64"
-                      placeholder="Search by name or location"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                    />
-                  </div>
+                  <SearchBar
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                  />
                 </div>
 
-                <PersonForm
+                <DatabaseContent
+                  people={filteredPeople}
                   newPerson={newPerson}
                   editingId={editingId}
                   uploadingImage={uploadingImage}
@@ -242,21 +228,12 @@ export default function FaceDatabase() {
                       imageUrl: "",
                     });
                   }}
+                  onEdit={handleEditPerson}
+                  onDelete={(id) => {
+                    setPersonToDelete(id);
+                    setDeleteDialogOpen(true);
+                  }}
                 />
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {filteredPeople.map((person) => (
-                    <PersonCard
-                      key={person.id}
-                      person={person}
-                      onEdit={handleEditPerson}
-                      onDelete={(id) => {
-                        setPersonToDelete(id);
-                        setDeleteDialogOpen(true);
-                      }}
-                    />
-                  ))}
-                </div>
               </TabsContent>
 
               <TabsContent value="analytics">
@@ -267,25 +244,11 @@ export default function FaceDatabase() {
         </main>
       </div>
 
-      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Confirm Removal</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to remove this person from the database? This action
-              cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeletePerson}>
-              Remove
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <DeleteConfirmationDialog
+        open={deleteDialogOpen}
+        onOpenChange={setDeleteDialogOpen}
+        onConfirmDelete={handleDeletePerson}
+      />
     </div>
   );
 }
