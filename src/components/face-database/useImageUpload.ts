@@ -21,8 +21,6 @@ export function useImageUpload() {
           description: "The file size should not exceed 5MB.",
           variant: "destructive",
         });
-        setUploadingImage(false);
-        setUploadProgress(null);
         return null;
       }
 
@@ -34,8 +32,6 @@ export function useImageUpload() {
           description: "Please upload a JPEG, PNG, or WebP image.",
           variant: "destructive",
         });
-        setUploadingImage(false);
-        setUploadProgress(null);
         return null;
       }
 
@@ -50,48 +46,32 @@ export function useImageUpload() {
         });
       }, 300);
 
-      // Use upsert: true to override any potential RLS issues
-      // We're using a publicly accessible bucket configured in SQL
+      console.log('Attempting to upload file:', filePath);
+      
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: true,
+          upsert: true
         });
 
       clearInterval(progressInterval);
 
       if (error) {
-        console.error("Supabase image upload error:", error);
+        console.error("Storage upload error:", error);
         setUploadingImage(false);
         setUploadProgress(null);
-
-        // Handle different error cases with specific messages
-        if (error.message?.includes("bucket not found")) {
-          toast({
-            title: "Image upload error",
-            description: "Storage bucket 'face-database-images' was not found. Please contact admin.",
-            variant: "destructive",
-          });
-        } else if (error.message?.toLowerCase().includes("row level security policy")) {
-          toast({
-            title: "Storage Permission Error",
-            description: "Permission denied for uploading images. The storage bucket may not be properly configured.",
-            variant: "destructive",
-          });
-        } else {
-          toast({
-            title: "Upload Error",
-            description: error.message || "An unknown error occurred during upload",
-            variant: "destructive",
-          });
-        }
+        
+        toast({
+          title: "Upload Error",
+          description: error.message || "Failed to upload image",
+          variant: "destructive",
+        });
         return null;
       }
 
       setUploadProgress(100);
-
-      // Use getPublicUrl to get the URL of the uploaded image
+      
       const { data: publicUrlData } = supabase.storage
         .from("face-database-images")
         .getPublicUrl(filePath);
@@ -101,27 +81,27 @@ export function useImageUpload() {
 
       if (publicUrlData?.publicUrl) {
         toast({
-          title: "Upload Successful",
-          description: "Image was uploaded successfully",
+          title: "Success",
+          description: "Image uploaded successfully",
         });
         return publicUrlData.publicUrl;
       } else {
         toast({
           title: "Error",
-          description: "Could not get public URL for image",
+          description: "Could not get public URL for uploaded image",
           variant: "destructive",
         });
         return null;
       }
     } catch (err) {
       console.error("Unexpected upload error:", err);
-      toast({
-        title: "Unexpected Error",
-        description: "An unexpected error occurred while uploading image",
-        variant: "destructive",
-      });
       setUploadingImage(false);
       setUploadProgress(null);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred while uploading",
+        variant: "destructive",
+      });
       return null;
     }
   };
