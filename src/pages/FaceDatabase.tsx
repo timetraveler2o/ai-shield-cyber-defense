@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -26,6 +25,7 @@ import {
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
+import type { StorageError } from "@supabase/storage-js";
 
 interface Person {
   id: string;
@@ -80,7 +80,6 @@ export default function FaceDatabase() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
 
-  // Improved: Upload with error handling for missing bucket/policy
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
       setUploadingImage(true);
@@ -97,7 +96,6 @@ export default function FaceDatabase() {
         });
       }, 300);
 
-      // Attempt upload
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
@@ -112,8 +110,8 @@ export default function FaceDatabase() {
         setUploadingImage(false);
         setUploadProgress(null);
 
-        // Custom messaging for common storage bucket/policy issues
-        if (error.message?.includes("bucket not found") || error.status === 404) {
+        if (error.message?.includes("bucket not found") || 
+            (error as StorageError).httpStatusCode === 404) {
           useToastHook({
             title: "Image upload error",
             description: "Storage bucket 'face-database-images' was not found. Please contact admin.",
@@ -137,7 +135,6 @@ export default function FaceDatabase() {
 
       setUploadProgress(100);
 
-      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from("face-database-images")
         .getPublicUrl(filePath);
@@ -168,7 +165,6 @@ export default function FaceDatabase() {
     }
   };
 
-  // Handler for file input change
   const handleImageChange = async (
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -185,7 +181,6 @@ export default function FaceDatabase() {
     }
   };
 
-  // Add Person or Save Person logic
   const handleAddPerson = () => {
     if (!newPerson.name || !newPerson.crime) {
       useToastHook({
@@ -221,7 +216,6 @@ export default function FaceDatabase() {
     });
   };
 
-  // Edit Person logic
   const handleEditPerson = (id: string) => {
     const personToEdit = people.find((p) => p.id === id);
     if (!personToEdit) {
@@ -245,7 +239,6 @@ export default function FaceDatabase() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  // Save changes when editing
   const handleUpdatePerson = () => {
     if (!editingId) {
       useToastHook({
