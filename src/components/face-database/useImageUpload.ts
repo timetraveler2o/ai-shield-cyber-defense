@@ -13,6 +13,32 @@ export function useImageUpload() {
       setUploadingImage(true);
       setUploadProgress(0);
 
+      // Check if the file is too large (e.g., 5MB limit)
+      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      if (file.size > MAX_FILE_SIZE) {
+        toast({
+          title: "File too large",
+          description: "The file size should not exceed 5MB.",
+          variant: "destructive",
+        });
+        setUploadingImage(false);
+        setUploadProgress(null);
+        return null;
+      }
+
+      // Check file type
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+      if (!validTypes.includes(file.type)) {
+        toast({
+          title: "Invalid file type",
+          description: "Please upload a JPEG, PNG, or WebP image.",
+          variant: "destructive",
+        });
+        setUploadingImage(false);
+        setUploadProgress(null);
+        return null;
+      }
+
       const fileExt = file.name.split(".").pop();
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
@@ -23,6 +49,20 @@ export function useImageUpload() {
           return prev;
         });
       }, 300);
+
+      // Check if we have authentication session
+      const { data: sessionData } = await supabase.auth.getSession();
+      if (!sessionData.session) {
+        clearInterval(progressInterval);
+        toast({
+          title: "Authentication required",
+          description: "You need to be logged in to upload images.",
+          variant: "destructive",
+        });
+        setUploadingImage(false);
+        setUploadProgress(null);
+        return null;
+      }
 
       const { data, error } = await supabase.storage
         .from("face-database-images")

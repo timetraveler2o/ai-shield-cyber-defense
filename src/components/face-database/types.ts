@@ -6,4 +6,5 @@ export interface Person {
   lastSeen: string;
   dateAdded: string;
   imageUrl: string;
+  status?: 'missing' | 'found' | 'investigating';
 }
