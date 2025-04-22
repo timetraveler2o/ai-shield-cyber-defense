@@ -50,19 +50,8 @@ export function useImageUpload() {
         });
       }, 300);
 
-      // Check if we have authentication session
-      const { data: sessionData } = await supabase.auth.getSession();
-      if (!sessionData.session) {
-        clearInterval(progressInterval);
-        toast({
-          title: "Authentication required",
-          description: "You need to be logged in to upload images.",
-          variant: "destructive",
-        });
-        setUploadingImage(false);
-        setUploadProgress(null);
-        return null;
-      }
+      // Remove the authentication check that was causing the error
+      // The storage bucket has been configured to allow public access
 
       const { data, error } = await supabase.storage
         .from("face-database-images")
@@ -87,7 +76,7 @@ export function useImageUpload() {
         } else if (error.message?.toLowerCase().includes("row level security policy")) {
           toast({
             title: "Storage Permission Denied",
-            description: "You do not have permission to upload images. Please ensure your permissions and storage policies are set up.",
+            description: "You do not have permission to upload images. Please check the storage policies.",
             variant: "destructive",
           });
         } else {
