@@ -32,7 +32,7 @@ interface Person {
   id: string;
   name: string;
   age: number;
-  crime: string;
+  lastSeen: string;
   dateAdded: string;
   imageUrl: string;
 }
@@ -44,7 +44,7 @@ export default function FaceDatabase() {
       id: "1",
       name: "John Smith",
       age: 34,
-      crime: "Fraud, Identity Theft",
+      lastSeen: "New Delhi, Connaught Place",
       dateAdded: "15/11/2023",
       imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
     },
@@ -52,7 +52,7 @@ export default function FaceDatabase() {
       id: "2",
       name: "Aakash Patel",
       age: 29,
-      crime: "Cyber Stalking",
+      lastSeen: "Mumbai, Bandra West",
       dateAdded: "3/12/2023",
       imageUrl: "https://randomuser.me/api/portraits/men/68.jpg",
     },
@@ -60,7 +60,7 @@ export default function FaceDatabase() {
       id: "3",
       name: "Sameer Khan",
       age: 41,
-      crime: "Financial Scam",
+      lastSeen: "Bangalore, MG Road",
       dateAdded: "21/1/2024",
       imageUrl: "https://randomuser.me/api/portraits/men/91.jpg",
     },
@@ -69,7 +69,7 @@ export default function FaceDatabase() {
   const [newPerson, setNewPerson] = useState<Omit<Person, "id" | "dateAdded">>({
     name: "",
     age: 0,
-    crime: "",
+    lastSeen: "",
     imageUrl: "",
   });
 
@@ -111,8 +111,9 @@ export default function FaceDatabase() {
         setUploadingImage(false);
         setUploadProgress(null);
 
-        if (error.message?.includes("bucket not found") || 
-            error.status === 404) {
+        // Fix for the TypeScript error - properly handle the StorageError
+        // StorageError doesn't have a status property, so we check for specific conditions
+        if (error.message?.includes("bucket not found")) {
           useToastHook({
             title: "Image upload error",
             description: "Storage bucket 'face-database-images' was not found. Please contact admin.",
@@ -183,7 +184,7 @@ export default function FaceDatabase() {
   };
 
   const handleAddPerson = () => {
-    if (!newPerson.name || !newPerson.crime) {
+    if (!newPerson.name || !newPerson.lastSeen) {
       useToastHook({
         title: "Invalid input",
         description: "Please fill all required fields",
@@ -207,13 +208,13 @@ export default function FaceDatabase() {
     setNewPerson({
       name: "",
       age: 0,
-      crime: "",
+      lastSeen: "",
       imageUrl: "",
     });
 
     useToastHook({
       title: "Person added",
-      description: `${person.name} has been added to the database`,
+      description: `${person.name} has been added to the missing persons database`,
     });
   };
 
@@ -233,7 +234,7 @@ export default function FaceDatabase() {
     setNewPerson({
       name: personToEdit.name,
       age: personToEdit.age,
-      crime: personToEdit.crime,
+      lastSeen: personToEdit.lastSeen,
       imageUrl: personToEdit.imageUrl,
     });
 
@@ -256,7 +257,7 @@ export default function FaceDatabase() {
             ...person,
             name: newPerson.name,
             age: newPerson.age,
-            crime: newPerson.crime,
+            lastSeen: newPerson.lastSeen,
             imageUrl: newPerson.imageUrl,
           }
         : person
@@ -267,7 +268,7 @@ export default function FaceDatabase() {
     setNewPerson({
       name: "",
       age: 0,
-      crime: "",
+      lastSeen: "",
       imageUrl: "",
     });
 
@@ -290,8 +291,8 @@ export default function FaceDatabase() {
     setPersonToDelete(null);
 
     useToastHook({
-      title: "Person deleted",
-      description: "The record has been deleted from the database",
+      title: "Person removed",
+      description: "The record has been removed from the database",
     });
   };
 
@@ -299,7 +300,7 @@ export default function FaceDatabase() {
     ? people.filter(
         (person) =>
           person.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          person.crime.toLowerCase().includes(searchQuery.toLowerCase())
+          person.lastSeen.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : people;
 
@@ -312,7 +313,7 @@ export default function FaceDatabase() {
           <div className="mb-6">
             <Tabs defaultValue="database" className="w-full">
               <TabsList className="grid w-full md:w-auto grid-cols-2 gap-2">
-                <TabsTrigger value="database">Face Database</TabsTrigger>
+                <TabsTrigger value="database">Missing Persons</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
               </TabsList>
 
@@ -322,10 +323,10 @@ export default function FaceDatabase() {
                     <div className="flex justify-between items-center">
                       <div>
                         <CardTitle className="text-xl font-semibold">
-                          Face Database
+                          Facial Recognition System for Missing Persons
                         </CardTitle>
                         <CardDescription>
-                          {people.length} individuals tracked
+                          {people.length} individuals registered
                         </CardDescription>
                       </div>
                       <div className="flex items-center gap-4">
@@ -333,7 +334,7 @@ export default function FaceDatabase() {
                           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
                           <Input
                             className="pl-10 w-64"
-                            placeholder="Search by name or crime"
+                            placeholder="Search by name or location"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                           />
@@ -345,7 +346,7 @@ export default function FaceDatabase() {
                     <Card className="border-cyber-primary/20 bg-cyber-dark mb-6">
                       <CardHeader className="pb-2">
                         <CardTitle className="text-md">
-                          {editingId ? "Edit Person" : "Add New Face"}
+                          {editingId ? "Edit Missing Person" : "Add Missing Person"}
                         </CardTitle>
                       </CardHeader>
                       <CardContent>
@@ -377,19 +378,19 @@ export default function FaceDatabase() {
                             />
                           </div>
                           <div>
-                            <Label htmlFor="crime">Crime</Label>
+                            <Label htmlFor="lastSeen">Last Seen Location</Label>
                             <Input
-                              id="crime"
-                              value={newPerson.crime}
+                              id="lastSeen"
+                              value={newPerson.lastSeen}
                               onChange={(e) =>
-                                setNewPerson({ ...newPerson, crime: e.target.value })
+                                setNewPerson({ ...newPerson, lastSeen: e.target.value })
                               }
                               className="mt-1"
                             />
                           </div>
                           <div>
                             <Label htmlFor="imageUpload" className="flex items-center gap-2">
-                              Image Upload
+                              Upload Photo
                               <Upload className="h-4 w-4" />
                             </Label>
                             <input
@@ -426,7 +427,7 @@ export default function FaceDatabase() {
                                 setNewPerson({
                                   name: "",
                                   age: 0,
-                                  crime: "",
+                                  lastSeen: "",
                                   imageUrl: "",
                                 });
                               }}
@@ -437,7 +438,7 @@ export default function FaceDatabase() {
                         ) : (
                           <Button onClick={handleAddPerson}>
                             <UserPlus className="mr-2 h-4 w-4" />
-                            Add Person
+                            Add Missing Person
                           </Button>
                         )}
                       </CardFooter>
@@ -461,10 +462,10 @@ export default function FaceDatabase() {
                           </CardHeader>
                           <CardContent>
                             <p className="text-sm text-muted-foreground">
-                              Age: {person.age} | Crime: {person.crime}
+                              Age: {person.age} | Last Seen: {person.lastSeen}
                             </p>
                             <p className="text-xs text-muted-foreground mt-2">
-                              Added: {person.dateAdded}
+                              Registered: {person.dateAdded}
                             </p>
                           </CardContent>
                           <CardFooter className="flex justify-between">
@@ -480,7 +481,7 @@ export default function FaceDatabase() {
                               size="sm"
                               onClick={() => confirmDelete(person.id)}
                             >
-                              <Trash2 className="h-4 w-4 mr-1" /> Delete
+                              <Trash2 className="h-4 w-4 mr-1" /> Remove
                             </Button>
                           </CardFooter>
                         </Card>
@@ -495,10 +496,10 @@ export default function FaceDatabase() {
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                       <BarChart4 className="h-5 w-5 text-cyber-primary" />
-                      Face Database Analytics
+                      Missing Persons Analytics
                     </CardTitle>
                     <CardDescription>
-                      Statistics and data analysis of tracked individuals
+                      Statistics and data analysis of missing individuals
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
@@ -507,16 +508,16 @@ export default function FaceDatabase() {
                         <h3 className="font-medium mb-1">Total Records</h3>
                         <p className="text-3xl font-bold">{people.length}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Faces in database
+                          Missing persons in database
                         </p>
                       </Card>
                       <Card className="bg-cyber-background/30 p-4">
-                        <h3 className="font-medium mb-1">Crime Categories</h3>
+                        <h3 className="font-medium mb-1">Location Hotspots</h3>
                         <p className="text-3xl font-bold">
-                          {new Set(people.map((p) => p.crime.split(", ")[0])).size}
+                          {new Set(people.map((p) => p.lastSeen.split(", ")[0])).size}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Unique primary crimes
+                          Unique primary locations
                         </p>
                       </Card>
                       <Card className="bg-cyber-background/30 p-4">
@@ -529,21 +530,21 @@ export default function FaceDatabase() {
                             : 0}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Of tracked individuals
+                          Of missing individuals
                         </p>
                       </Card>
                     </div>
 
-                    <h3 className="font-medium mb-4">Crime Distribution</h3>
+                    <h3 className="font-medium mb-4">Location Distribution</h3>
                     <div className="space-y-3">
-                      {Array.from(new Set(people.map((p) => p.crime.split(", ")[0]))).map(
-                        (crime) => {
-                          const count = people.filter((p) => p.crime.includes(crime)).length;
+                      {Array.from(new Set(people.map((p) => p.lastSeen.split(", ")[0]))).map(
+                        (location) => {
+                          const count = people.filter((p) => p.lastSeen.includes(location)).length;
                           const percentage = (count / people.length) * 100;
                           return (
-                            <div key={crime} className="w-full">
+                            <div key={location} className="w-full">
                               <div className="flex justify-between mb-1">
-                                <span className="text-sm">{crime}</span>
+                                <span className="text-sm">{location}</span>
                                 <span className="text-sm">
                                   {count} ({percentage.toFixed(0)}%)
                                 </span>
@@ -570,9 +571,9 @@ export default function FaceDatabase() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogTitle>Confirm Removal</DialogTitle>
             <DialogDescription>
-              Are you sure you want to delete this record? This action cannot be undone.
+              Are you sure you want to remove this person from the database? This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -580,7 +581,7 @@ export default function FaceDatabase() {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeletePerson}>
-              Delete
+              Remove
             </Button>
           </DialogFooter>
         </DialogContent>
