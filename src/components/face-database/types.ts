@@ -7,4 +7,15 @@ export interface Person {
   dateAdded: string;
   imageUrl: string;
   status?: 'missing' | 'found' | 'investigating';
+  faceDescriptor?: number[]; // Face recognition data
+  lastDetectedAt?: string;
+  lastDetectedLocation?: string;
+}
+
+export interface DetectionMatch {
+  personId: string;
+  matchConfidence: number;
+  timestamp: string;
+  location: string;
+  imageUrl: string;
 }

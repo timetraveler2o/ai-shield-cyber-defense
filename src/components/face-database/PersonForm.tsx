@@ -9,6 +9,8 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { UserPlus, Upload } from "lucide-react";
 import { Person } from "./types";
 
@@ -71,6 +73,22 @@ export function PersonForm({
             />
           </div>
           <div>
+            <Label htmlFor="status">Status</Label>
+            <Select 
+              value={newPerson.status || "missing"} 
+              onValueChange={(value) => onPersonChange("status", value)}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="missing">Missing</SelectItem>
+                <SelectItem value="investigating">Under Investigation</SelectItem>
+                <SelectItem value="found">Found</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="md:col-span-2">
             <Label htmlFor="imageUpload" className="flex items-center gap-2">
               Upload Photo
               <Upload className="h-4 w-4" />
@@ -84,9 +102,7 @@ export function PersonForm({
               className="mt-1 block w-full text-sm text-white file:mr-4 file:rounded-md file:border-0 file:bg-cyber-primary file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white file:hover:bg-cyber-primary/90"
             />
             {uploadingImage && (
-              <p className="text-sm text-muted-foreground mt-1">
-                Uploading: {uploadProgress ?? 0}%
-              </p>
+              <Progress value={uploadProgress || 0} className="mt-2 h-2" />
             )}
             {newPerson.imageUrl && !uploadingImage && (
               <img

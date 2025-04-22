@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -9,6 +10,7 @@ import { useImageUpload } from "@/components/face-database/useImageUpload";
 import { SearchBar } from "@/components/face-database/SearchBar";
 import { DatabaseContent } from "@/components/face-database/DatabaseContent";
 import { DeleteConfirmationDialog } from "@/components/face-database/DeleteConfirmationDialog";
+import { FaceRecognitionPanel } from "@/components/face-database/FaceRecognitionPanel";
 
 export default function FaceDatabase() {
   const { toast } = useToast();
@@ -21,6 +23,7 @@ export default function FaceDatabase() {
       lastSeen: "New Delhi, Connaught Place",
       dateAdded: "15/11/2023",
       imageUrl: "https://randomuser.me/api/portraits/men/32.jpg",
+      status: "missing"
     },
     {
       id: "2",
@@ -29,6 +32,9 @@ export default function FaceDatabase() {
       lastSeen: "Mumbai, Bandra West",
       dateAdded: "3/12/2023",
       imageUrl: "https://randomuser.me/api/portraits/men/68.jpg",
+      status: "investigating",
+      lastDetectedAt: "22/04/2025",
+      lastDetectedLocation: "Mumbai, Juhu Beach"
     },
     {
       id: "3",
@@ -37,6 +43,9 @@ export default function FaceDatabase() {
       lastSeen: "Bangalore, MG Road",
       dateAdded: "21/1/2024",
       imageUrl: "https://randomuser.me/api/portraits/men/91.jpg",
+      status: "found",
+      lastDetectedAt: "15/04/2025",
+      lastDetectedLocation: "Bangalore, Koramangala"
     },
   ]);
 
@@ -45,6 +54,7 @@ export default function FaceDatabase() {
     age: 0,
     lastSeen: "",
     imageUrl: "",
+    status: "missing"
   });
 
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -97,6 +107,7 @@ export default function FaceDatabase() {
       age: 0,
       lastSeen: "",
       imageUrl: "",
+      status: "missing"
     });
 
     toast({
@@ -123,6 +134,7 @@ export default function FaceDatabase() {
       age: personToEdit.age,
       lastSeen: personToEdit.lastSeen,
       imageUrl: personToEdit.imageUrl,
+      status: personToEdit.status || "missing"
     });
 
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -146,6 +158,7 @@ export default function FaceDatabase() {
             age: newPerson.age,
             lastSeen: newPerson.lastSeen,
             imageUrl: newPerson.imageUrl,
+            status: newPerson.status
           }
         : person
     );
@@ -157,11 +170,25 @@ export default function FaceDatabase() {
       age: 0,
       lastSeen: "",
       imageUrl: "",
+      status: "missing"
     });
 
     toast({
       title: "Person updated",
       description: "The record has been updated successfully",
+    });
+  };
+
+  const handleUpdatePersonData = (updatedPerson: Person) => {
+    setPeople(currentPeople => 
+      currentPeople.map(person =>
+        person.id === updatedPerson.id ? updatedPerson : person
+      )
+    );
+
+    toast({
+      title: "Record Updated",
+      description: `Data for ${updatedPerson.name} has been updated.`,
     });
   };
 
@@ -194,8 +221,9 @@ export default function FaceDatabase() {
         <main className="flex-1 overflow-y-auto p-6 bg-cyber-background">
           <div className="mb-6">
             <Tabs defaultValue="database" className="w-full">
-              <TabsList className="grid w-full md:w-auto grid-cols-2 gap-2">
+              <TabsList className="grid w-full md:w-auto grid-cols-3 gap-2">
                 <TabsTrigger value="database">Missing Persons</TabsTrigger>
+                <TabsTrigger value="recognition">Facial Recognition</TabsTrigger>
                 <TabsTrigger value="analytics">Analytics</TabsTrigger>
               </TabsList>
 
@@ -226,6 +254,7 @@ export default function FaceDatabase() {
                       age: 0,
                       lastSeen: "",
                       imageUrl: "",
+                      status: "missing"
                     });
                   }}
                   onEdit={handleEditPerson}
@@ -233,6 +262,13 @@ export default function FaceDatabase() {
                     setPersonToDelete(id);
                     setDeleteDialogOpen(true);
                   }}
+                />
+              </TabsContent>
+
+              <TabsContent value="recognition">
+                <FaceRecognitionPanel 
+                  people={people}
+                  onUpdatePerson={handleUpdatePersonData}
                 />
               </TabsContent>
 
