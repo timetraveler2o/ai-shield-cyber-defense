@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -111,7 +112,7 @@ export default function FaceDatabase() {
         setUploadProgress(null);
 
         if (error.message?.includes("bucket not found") || 
-            error.statusCode === 404) {
+            error.status === 404) {
           useToastHook({
             title: "Image upload error",
             description: "Storage bucket 'face-database-images' was not found. Please contact admin.",
