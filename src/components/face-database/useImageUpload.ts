@@ -53,133 +53,108 @@ export function useImageUpload() {
         });
       }, 300);
 
-      // Check if bucket exists
-      const { data: buckets } = await supabase.storage.listBuckets();
-      const bucketExists = buckets?.some(bucket => bucket.name === 'face-database-images');
+      // Instead of creating a bucket (which requires admin privileges),
+      // let's try to use an existing bucket or create a simpler file upload approach
       
-      // Create bucket if it doesn't exist
-      if (!bucketExists) {
-        console.log("Creating storage bucket 'face-database-images'");
-        const { error: createBucketError } = await supabase.storage
-          .createBucket('face-database-images', {
-            public: true,
-          });
-          
-        if (createBucketError) {
-          console.error("Error creating bucket:", createBucketError);
-          clearInterval(progressInterval);
-          setUploadingImage(false);
-          setUploadProgress(null);
-          toast({
-            title: "Storage Error",
-            description: "Failed to create storage bucket. Please try again later.",
-            variant: "destructive",
-          });
-          return null;
-        }
-      }
-
-      // Upload to Supabase storage
-      const { data, error } = await supabase.storage
+      // First, try to upload to the existing bucket if it exists
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: true,
         });
 
-      clearInterval(progressInterval);
+      if (uploadError && uploadError.message.includes("bucket not found")) {
+        // The bucket doesn't exist, but we can't create it from the client
+        // Let's use a more generic bucket name that might already exist
+        const { data: generalUploadData, error: generalUploadError } = await supabase.storage
+          .from("public")
+          .upload(`face-images/${filePath}`, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
 
-      if (error) {
-        console.error("Storage upload error:", error);
-        
-        // Try to make the bucket public if we got a permission error
-        if (error.message.includes("permission") || error.message.includes("policy")) {
-          toast({
-            title: "Permission Error",
-            description: "Updating permissions and trying again...",
-          });
+        clearInterval(progressInterval);
           
-          // Update bucket to be public
-          await supabase.storage.updateBucket('face-database-images', {
-            public: true,
-          });
-          
-          // Create public policies
-          await supabase.storage.from('face-database-images').createSignedUrl(filePath, 60);
-          
-          // Try upload again
-          const secondAttempt = await supabase.storage
-            .from("face-database-images")
-            .upload(filePath, file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-            
-          if (secondAttempt.error) {
-            toast({
-              title: "Upload Failed",
-              description: secondAttempt.error.message || "Failed to upload file after permission update",
-              variant: "destructive",
-            });
-            setUploadingImage(false);
-            setUploadProgress(null);
-            return null;
-          }
-          
-          // Get public URL after second attempt
-          const { data: publicUrlData } = supabase.storage
-            .from("face-database-images")
-            .getPublicUrl(filePath);
-            
-          setUploadProgress(100);
-          setUploadingImage(false);
-          
-          if (publicUrlData?.publicUrl) {
-            toast({
-              title: "Success",
-              description: "File uploaded successfully",
-            });
-            return publicUrlData.publicUrl;
-          }
-        } else {
+        if (generalUploadError) {
+          console.error("Storage upload error:", generalUploadError);
           toast({
             title: "Upload Error",
-            description: error.message || "Failed to upload file",
+            description: "Failed to upload file. Please check if your Supabase project has storage buckets configured.",
             variant: "destructive",
           });
           setUploadingImage(false);
           setUploadProgress(null);
           return null;
         }
-      }
-
-      // Get public URL
-      const { data: publicUrlData } = supabase.storage
-        .from("face-database-images")
-        .getPublicUrl(filePath);
-
-      setUploadProgress(100);
-      
-      // Add a short delay to show the 100% progress before resetting
-      setTimeout(() => {
-        setUploadingImage(false);
-        setUploadProgress(null);
-      }, 500);
-
-      if (publicUrlData?.publicUrl) {
+          
+        // Get public URL from the general bucket
+        const { data: publicUrlData } = supabase.storage
+          .from("public")
+          .getPublicUrl(`face-images/${filePath}`);
+          
+        setUploadProgress(100);
+        
+        // Add a short delay to show the 100% progress before resetting
+        setTimeout(() => {
+          setUploadingImage(false);
+          setUploadProgress(null);
+        }, 500);
+        
+        if (publicUrlData?.publicUrl) {
+          toast({
+            title: "Success",
+            description: "File uploaded successfully",
+          });
+          return publicUrlData.publicUrl;
+        }
+      } else if (uploadError) {
+        clearInterval(progressInterval);
+        console.error("Storage upload error:", uploadError);
         toast({
-          title: "Success",
-          description: "File uploaded successfully",
-        });
-        return publicUrlData.publicUrl;
-      } else {
-        toast({
-          title: "Error",
-          description: "Could not get public URL for uploaded file",
+          title: "Upload Error",
+          description: "Failed to upload file. Please check your Supabase storage configuration.",
           variant: "destructive",
         });
+        setUploadingImage(false);
+        setUploadProgress(null);
         return null;
+      } else {
+        // Original upload worked
+        clearInterval(progressInterval);
+        
+        // Get public URL
+        const { data: publicUrlData } = supabase.storage
+          .from("face-database-images")
+          .getPublicUrl(filePath);
+        
+        setUploadProgress(100);
+        
+        // Add a short delay to show the 100% progress before resetting
+        setTimeout(() => {
+          setUploadingImage(false);
+          setUploadProgress(null);
+        }, 500);
+        
+        if (publicUrlData?.publicUrl) {
+          toast({
+            title: "Success",
+            description: "File uploaded successfully",
+          });
+          return publicUrlData.publicUrl;
+        }
       }
+      
+      clearInterval(progressInterval);
+      setUploadingImage(false);
+      setUploadProgress(null);
+      toast({
+        title: "Error",
+        description: "Could not get public URL for uploaded file",
+        variant: "destructive",
+      });
+      return null;
+      
     } catch (err) {
       console.error("Unexpected upload error:", err);
       setUploadingImage(false);
