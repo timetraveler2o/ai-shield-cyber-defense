@@ -8,7 +8,6 @@ import PhishingDetection from "./pages/PhishingDetection";
 import FraudDetection from "./pages/FraudDetection";
 import SocialMonitoring from "./pages/SocialMonitoring";
 import RansomwareSimulation from "./pages/RansomwareSimulation";
-import DeepfakeDetection from "./pages/DeepfakeDetection";
 import VoIPAnalysis from "./pages/VoIPAnalysis";
 import UPIMonitoring from "./pages/UPIMonitoring";
 import SIMFraudDetection from "./pages/SIMFraudDetection";
@@ -35,7 +34,6 @@ const App = () => {
             <Route path="/fraud" element={<FraudDetection />} />
             <Route path="/social" element={<SocialMonitoring />} />
             <Route path="/ransomware" element={<RansomwareSimulation />} />
-            <Route path="/deepfake" element={<DeepfakeDetection />} />
             <Route path="/voip" element={<VoIPAnalysis />} />
             <Route path="/upi" element={<UPIMonitoring />} />
             <Route path="/sim-fraud" element={<SIMFraudDetection />} />

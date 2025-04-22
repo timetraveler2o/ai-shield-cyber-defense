@@ -1,4 +1,3 @@
-
 import { Link, useLocation } from "react-router-dom";
 import {
   ShieldCheck,
@@ -47,11 +46,6 @@ const menuItems = [
     title: "Ransomware Simulation",
     icon: FileSearch,
     path: "/ransomware",
-  },
-  {
-    title: "Deepfake Detection",
-    icon: Users,
-    path: "/deepfake",
   },
   {
     title: "VoIP Analysis",
