@@ -11,11 +11,115 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { MessageSquare } from "lucide-react";
-import { useMobile } from "@/hooks/use-mobile";
+import { useIsMobile } from "@/hooks/use-mobile";
+import { Person } from "@/components/face-database/types";
+import { v4 as uuidv4 } from "uuid";
 
 const FaceDatabase = () => {
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
+  
+  // Add state for people data
+  const [people, setPeople] = useState<Person[]>([
+    {
+      id: "1",
+      name: "John Doe",
+      age: 32,
+      lastSeen: "New York, NY",
+      dateAdded: "2023-09-15",
+      imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=250",
+      status: "missing"
+    },
+    {
+      id: "2",
+      name: "Jane Smith",
+      age: 28,
+      lastSeen: "Los Angeles, CA",
+      dateAdded: "2023-10-02",
+      imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=250",
+      status: "investigating"
+    }
+  ]);
+  
+  // Add state for new person form
+  const [newPerson, setNewPerson] = useState<Omit<Person, "id" | "dateAdded">>({
+    name: "",
+    age: 0,
+    lastSeen: "",
+    imageUrl: "",
+    status: "missing"
+  });
+  
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  
+  // Handler functions
+  const handlePersonChange = (field: string, value: string | number) => {
+    setNewPerson(prev => ({ ...prev, [field]: value }));
+  };
+  
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // This would normally handle image uploads
+    console.log("Image selected:", e.target.files?.[0]?.name);
+  };
+  
+  const handleSubmit = () => {
+    if (editingId) {
+      // Update existing person
+      setPeople(prev => 
+        prev.map(p => p.id === editingId ? { ...p, ...newPerson } : p)
+      );
+      setEditingId(null);
+    } else {
+      // Add new person
+      const currentDate = new Date().toISOString().split('T')[0];
+      setPeople(prev => [...prev, { 
+        ...newPerson, 
+        id: uuidv4(), 
+        dateAdded: currentDate 
+      }]);
+    }
+    
+    // Reset form
+    setNewPerson({
+      name: "",
+      age: 0,
+      lastSeen: "",
+      imageUrl: "",
+      status: "missing"
+    });
+  };
+  
+  const handleCancel = () => {
+    setEditingId(null);
+    setNewPerson({
+      name: "",
+      age: 0,
+      lastSeen: "",
+      imageUrl: "",
+      status: "missing"
+    });
+  };
+  
+  const handleEdit = (id: string) => {
+    const person = people.find(p => p.id === id);
+    if (person) {
+      const { id: _, dateAdded: __, ...rest } = person;
+      setNewPerson(rest);
+      setEditingId(id);
+    }
+  };
+  
+  const handleDelete = (id: string) => {
+    setPeople(prev => prev.filter(p => p.id !== id));
+  };
+  
+  const handleUpdatePerson = (updatedPerson: Person) => {
+    setPeople(prev => 
+      prev.map(p => p.id === updatedPerson.id ? updatedPerson : p)
+    );
+  };
 
   return (
     <div className="flex h-screen bg-cyber-background text-white overflow-hidden">
@@ -33,15 +137,30 @@ const FaceDatabase = () => {
             </TabsList>
             
             <TabsContent value="database" className="space-y-4">
-              <DatabaseContent />
+              <DatabaseContent 
+                people={people}
+                newPerson={newPerson}
+                editingId={editingId}
+                uploadingImage={uploadingImage}
+                uploadProgress={uploadProgress}
+                onPersonChange={handlePersonChange}
+                onImageChange={handleImageChange}
+                onSubmit={handleSubmit}
+                onCancel={handleCancel}
+                onEdit={handleEdit}
+                onDelete={handleDelete}
+              />
             </TabsContent>
             
             <TabsContent value="recognition" className="space-y-4">
-              <FaceRecognitionPanel />
+              <FaceRecognitionPanel 
+                people={people}
+                onUpdatePerson={handleUpdatePerson}
+              />
             </TabsContent>
             
             <TabsContent value="analytics" className="space-y-4">
-              <AnalyticsPanel />
+              <AnalyticsPanel people={people} />
             </TabsContent>
           </Tabs>
         </div>
