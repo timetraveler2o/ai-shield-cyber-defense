@@ -1,7 +1,6 @@
 
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Index from "./pages/Index";
@@ -18,35 +17,39 @@ import CrimeReport from "./pages/CrimeReport";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
 import NotFound from "./pages/NotFound";
+import { TooltipProvider } from "@/components/ui/tooltip";
 
+// Initialize QueryClient outside of component
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/phishing" element={<PhishingDetection />} />
-          <Route path="/fraud" element={<FraudDetection />} />
-          <Route path="/social" element={<SocialMonitoring />} />
-          <Route path="/ransomware" element={<RansomwareSimulation />} />
-          <Route path="/deepfake" element={<DeepfakeDetection />} />
-          <Route path="/voip" element={<VoIPAnalysis />} />
-          <Route path="/upi" element={<UPIMonitoring />} />
-          <Route path="/sim-fraud" element={<SIMFraudDetection />} />
-          <Route path="/face-database" element={<FaceDatabase />} />
-          <Route path="/crime-report" element={<CrimeReport />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/profile" element={<Profile />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/phishing" element={<PhishingDetection />} />
+            <Route path="/fraud" element={<FraudDetection />} />
+            <Route path="/social" element={<SocialMonitoring />} />
+            <Route path="/ransomware" element={<RansomwareSimulation />} />
+            <Route path="/deepfake" element={<DeepfakeDetection />} />
+            <Route path="/voip" element={<VoIPAnalysis />} />
+            <Route path="/upi" element={<UPIMonitoring />} />
+            <Route path="/sim-fraud" element={<SIMFraudDetection />} />
+            <Route path="/face-database" element={<FaceDatabase />} />
+            <Route path="/crime-report" element={<CrimeReport />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/profile" element={<Profile />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </TooltipProvider>
       </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+    </QueryClientProvider>
+  );
+};
 
 export default App;
