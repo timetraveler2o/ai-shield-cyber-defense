@@ -5,12 +5,12 @@ import { Header } from "@/components/Header";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/components/ui/use-toast";
 import { Person } from "@/components/face-database/types";
-import { AnalyticsPanel } from "@/components/face-database/AnalyticsPanel";
-import { useImageUpload } from "@/components/face-database/useImageUpload";
-import { SearchBar } from "@/components/face-database/SearchBar";
 import { DatabaseContent } from "@/components/face-database/DatabaseContent";
 import { DeleteConfirmationDialog } from "@/components/face-database/DeleteConfirmationDialog";
 import { FaceRecognitionPanel } from "@/components/face-database/FaceRecognitionPanel";
+import { AnalyticsPanel } from "@/components/face-database/AnalyticsPanel";
+import { useImageUpload } from "@/components/face-database/useImageUpload";
+import { SearchBar } from "@/components/face-database/SearchBar";
 
 export default function FaceDatabase() {
   const { toast } = useToast();
@@ -35,18 +35,7 @@ export default function FaceDatabase() {
       status: "investigating",
       lastDetectedAt: "22/04/2025",
       lastDetectedLocation: "Mumbai, Juhu Beach"
-    },
-    {
-      id: "3",
-      name: "Sameer Khan",
-      age: 41,
-      lastSeen: "Bangalore, MG Road",
-      dateAdded: "21/1/2024",
-      imageUrl: "https://randomuser.me/api/portraits/men/91.jpg",
-      status: "found",
-      lastDetectedAt: "15/04/2025",
-      lastDetectedLocation: "Bangalore, Koramangala"
-    },
+    }
   ]);
 
   const [newPerson, setNewPerson] = useState<Omit<Person, "id" | "dateAdded">>({
@@ -62,6 +51,7 @@ export default function FaceDatabase() {
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [personToDelete, setPersonToDelete] = useState<string | null>(null);
 
+  // Implement similar methods as before for person management
   const handlePersonChange = (field: string, value: string | number) => {
     setNewPerson((prev) => ({ ...prev, [field]: value }));
   };
@@ -73,10 +63,6 @@ export default function FaceDatabase() {
     const url = await uploadImage(file);
     if (url) {
       setNewPerson((prev) => ({ ...prev, imageUrl: url }));
-      toast({
-        title: "Image uploaded",
-        description: "Image uploaded successfully.",
-      });
     }
   };
 
@@ -116,30 +102,6 @@ export default function FaceDatabase() {
     });
   };
 
-  const handleEditPerson = (id: string) => {
-    const personToEdit = people.find((p) => p.id === id);
-    if (!personToEdit) {
-      toast({
-        title: "Edit Error",
-        description: "Could not find the person to edit in the database.",
-        variant: "destructive",
-      });
-      setEditingId(null);
-      return;
-    }
-
-    setEditingId(id);
-    setNewPerson({
-      name: personToEdit.name,
-      age: personToEdit.age,
-      lastSeen: personToEdit.lastSeen,
-      imageUrl: personToEdit.imageUrl,
-      status: personToEdit.status || "missing"
-    });
-
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  };
-
   const handleUpdatePerson = () => {
     if (!editingId) {
       toast({
@@ -176,19 +138,6 @@ export default function FaceDatabase() {
     toast({
       title: "Person updated",
       description: "The record has been updated successfully",
-    });
-  };
-
-  const handleUpdatePersonData = (updatedPerson: Person) => {
-    setPeople(currentPeople => 
-      currentPeople.map(person =>
-        person.id === updatedPerson.id ? updatedPerson : person
-      )
-    );
-
-    toast({
-      title: "Record Updated",
-      description: `Data for ${updatedPerson.name} has been updated.`,
     });
   };
 
@@ -257,7 +206,19 @@ export default function FaceDatabase() {
                       status: "missing"
                     });
                   }}
-                  onEdit={handleEditPerson}
+                  onEdit={(id) => {
+                    const personToEdit = people.find((p) => p.id === id);
+                    if (personToEdit) {
+                      setEditingId(id);
+                      setNewPerson({
+                        name: personToEdit.name,
+                        age: personToEdit.age,
+                        lastSeen: personToEdit.lastSeen,
+                        imageUrl: personToEdit.imageUrl,
+                        status: personToEdit.status || "missing"
+                      });
+                    }
+                  }}
                   onDelete={(id) => {
                     setPersonToDelete(id);
                     setDeleteDialogOpen(true);
@@ -266,9 +227,16 @@ export default function FaceDatabase() {
               </TabsContent>
 
               <TabsContent value="recognition">
+                {/* Reuse existing FaceRecognitionPanel component */}
                 <FaceRecognitionPanel 
                   people={people}
-                  onUpdatePerson={handleUpdatePersonData}
+                  onUpdatePerson={(updatedPerson) => {
+                    setPeople(currentPeople => 
+                      currentPeople.map(person => 
+                        person.id === updatedPerson.id ? updatedPerson : person
+                      )
+                    );
+                  }}
                 />
               </TabsContent>
 

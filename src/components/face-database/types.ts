@@ -7,7 +7,7 @@ export interface Person {
   dateAdded: string;
   imageUrl: string;
   status?: 'missing' | 'found' | 'investigating';
-  faceDescriptor?: number[]; // Face recognition data
+  faceDescriptor?: number[]; 
   lastDetectedAt?: string;
   lastDetectedLocation?: string;
 }

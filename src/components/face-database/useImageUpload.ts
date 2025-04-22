@@ -13,8 +13,10 @@ export function useImageUpload() {
       setUploadingImage(true);
       setUploadProgress(0);
 
-      // Check if the file is too large (e.g., 5MB limit)
+      // Validate file size and type
       const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
+      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+
       if (file.size > MAX_FILE_SIZE) {
         toast({
           title: "File too large",
@@ -24,8 +26,6 @@ export function useImageUpload() {
         return null;
       }
 
-      // Check file type
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
       if (!validTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
@@ -39,6 +39,7 @@ export function useImageUpload() {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
+      // Simulate upload progress
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev !== null && prev < 90) return prev + 10;
@@ -46,8 +47,7 @@ export function useImageUpload() {
         });
       }, 300);
 
-      console.log('Attempting to upload file:', filePath);
-      
+      // Upload to Supabase storage
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
@@ -70,14 +70,13 @@ export function useImageUpload() {
         return null;
       }
 
-      setUploadProgress(100);
-      
+      // Get public URL
       const { data: publicUrlData } = supabase.storage
         .from("face-database-images")
         .getPublicUrl(filePath);
 
+      setUploadProgress(100);
       setUploadingImage(false);
-      setUploadProgress(null);
 
       if (publicUrlData?.publicUrl) {
         toast({
