@@ -18,6 +18,14 @@ export interface DetectionMatch {
   timestamp: string;
   location: string;
   imageUrl: string;
+  faceBox?: FaceBox;
+}
+
+export interface FaceBox {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
 }
 
 export interface ChatMessage {

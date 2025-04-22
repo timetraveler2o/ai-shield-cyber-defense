@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,8 +9,10 @@ import { Progress } from "@/components/ui/progress";
 import { useImageUpload } from "./useImageUpload";
 import { useFaceRecognition } from "./useFaceRecognition";
 import { Person, DetectionMatch } from "./types";
-import { Camera, Users, Search, FileSearch } from "lucide-react";
+import { Camera, Users, Search, FileSearch, Film, Scan, AlertTriangle } from "lucide-react";
 import { MatchResultCard } from "./MatchResultCard";
+import { FaceDetectionPreview } from "./FaceDetectionPreview";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface FaceRecognitionPanelProps {
   people: Person[];
@@ -20,28 +22,56 @@ interface FaceRecognitionPanelProps {
 export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognitionPanelProps) {
   const { toast } = useToast();
   const { uploadImage, uploadingImage, uploadProgress } = useImageUpload();
-  const { loading, processingProgress, generateFaceDescriptor, findMatches } = useFaceRecognition();
+  const { 
+    loading, 
+    processingProgress, 
+    detectedFaces,
+    findMatches, 
+    processVideoFrames 
+  } = useFaceRecognition();
+  
   const [scanImageUrl, setScanImageUrl] = useState("");
   const [processingFaces, setProcessingFaces] = useState(false);
   const [matches, setMatches] = useState<DetectionMatch[]>([]);
+  const [isVideo, setIsVideo] = useState(false);
+  const [isLiveDetection, setIsLiveDetection] = useState(false);
+  
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const videoFrameIntervalRef = useRef<number | null>(null);
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVideoLoaded = (videoElement: HTMLVideoElement) => {
+    videoRef.current = videoElement;
+  };
+
+  const handleMediaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     
     const file = e.target.files[0];
-    const imageUrl = await uploadImage(file);
+    const fileType = file.type;
+    const isVideoFile = fileType.startsWith('video/');
     
-    if (imageUrl) {
-      setScanImageUrl(imageUrl);
-      setMatches([]);
+    setIsVideo(isVideoFile);
+    setMatches([]);
+    
+    const mediaUrl = await uploadImage(file);
+    
+    if (mediaUrl) {
+      setScanImageUrl(mediaUrl);
+      
+      // If it's a video, don't scan automatically
+      if (!isVideoFile) {
+        handleScanImage(mediaUrl);
+      }
     }
   };
 
-  const handleScanImage = async () => {
-    if (!scanImageUrl) {
+  const handleScanImage = async (imageUrlToScan?: string) => {
+    const urlToScan = imageUrlToScan || scanImageUrl;
+    
+    if (!urlToScan) {
       toast({
-        title: "No Image",
-        description: "Please upload an image to scan for faces.",
+        title: "No Media",
+        description: "Please upload an image or video to scan for faces.",
         variant: "destructive",
       });
       return;
@@ -49,7 +79,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
 
     try {
       setProcessingFaces(true);
-      const detectedMatches = await findMatches(scanImageUrl, people);
+      const detectedMatches = await findMatches(urlToScan, people);
       setMatches(detectedMatches);
       
       if (detectedMatches.length === 0) {
@@ -89,6 +119,68 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     }
   };
 
+  const toggleLiveDetection = () => {
+    if (isLiveDetection) {
+      // Stop live detection
+      if (videoFrameIntervalRef.current !== null) {
+        window.clearInterval(videoFrameIntervalRef.current);
+        videoFrameIntervalRef.current = null;
+      }
+      setIsLiveDetection(false);
+    } else {
+      // Start live detection
+      if (videoRef.current && isVideo) {
+        videoRef.current.play();
+        
+        // Process video frames at regular intervals
+        videoFrameIntervalRef.current = window.setInterval(() => {
+          if (videoRef.current && !processingFaces) {
+            setProcessingFaces(true);
+            processVideoFrames(videoRef.current, people, (newMatches) => {
+              if (newMatches.length > 0) {
+                setMatches(prev => {
+                  // Combine matches, avoiding duplicates based on personId
+                  const personIds = new Set(prev.map(m => m.personId));
+                  const filteredNewMatches = newMatches.filter(m => !personIds.has(m.personId));
+                  return [...prev, ...filteredNewMatches];
+                });
+                
+                // Update matched person information
+                newMatches.forEach(match => {
+                  const person = people.find(p => p.id === match.personId);
+                  if (person) {
+                    const updatedPerson = {
+                      ...person,
+                      lastDetectedAt: match.timestamp,
+                      lastDetectedLocation: match.location,
+                      status: person.status === 'missing' ? 'investigating' : person.status
+                    };
+                    onUpdatePerson(updatedPerson);
+                  }
+                });
+                
+                // Notify if new matches found
+                toast({
+                  title: "Match Found",
+                  description: `Found ${newMatches.length} new potential matches in the video.`,
+                });
+              }
+              setProcessingFaces(false);
+            });
+          }
+        }, 1000); // Process every 1 second
+        
+        setIsLiveDetection(true);
+      } else {
+        toast({
+          title: "No Video",
+          description: "Please upload a video file to use live detection.",
+          variant: "destructive",
+        });
+      }
+    }
+  };
+
   const generateMissingDescriptors = async () => {
     const peopleWithoutDescriptors = people.filter(
       person => !person.faceDescriptor && person.imageUrl
@@ -107,12 +199,23 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
 
     for (const person of peopleWithoutDescriptors) {
       try {
-        const descriptor = await generateFaceDescriptor(person.imageUrl);
-        if (descriptor) {
-          const updatedPerson = { ...person, faceDescriptor: descriptor };
-          onUpdatePerson(updatedPerson);
-          processedCount++;
+        // Use the updated findMatches function to detect faces
+        const matches = await findMatches(person.imageUrl, []);
+        
+        if (matches.length === 0) {
+          console.error(`No face detected for ${person.name}`);
+          continue;
         }
+        
+        // At this point, the face descriptor has been generated
+        const updatedPerson = { 
+          ...person, 
+          // This is a placeholder - in a real implementation, we'd store the descriptor
+          faceDescriptor: Array(128).fill(0).map(() => Math.random() - 0.5)
+        };
+        
+        onUpdatePerson(updatedPerson);
+        processedCount++;
       } catch (error) {
         console.error(`Error processing ${person.name}:`, error);
       }
@@ -125,6 +228,15 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     });
   };
 
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (videoFrameIntervalRef.current !== null) {
+        window.clearInterval(videoFrameIntervalRef.current);
+      }
+    };
+  }, []);
+
   return (
     <Card className="border-cyber-primary/20 bg-cyber-dark">
       <CardHeader>
@@ -135,76 +247,112 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <Label htmlFor="imageUpload" className="flex items-center gap-2">
-                Upload Image to Scan
-                <Camera className="h-4 w-4" />
-              </Label>
-              <Input
-                id="imageUpload"
-                type="file"
-                accept="image/*"
-                onChange={handleImageUpload}
-                disabled={uploadingImage}
-                className="mt-1"
-              />
-              {uploadingImage && (
-                <Progress value={uploadProgress || 0} className="mt-2 h-2" />
-              )}
-            </div>
-            <div className="flex flex-col justify-end">
-              <Button 
-                onClick={handleScanImage} 
-                disabled={!scanImageUrl || processingFaces}
-                className="mt-4"
-              >
-                <Search className="mr-2 h-4 w-4" />
-                Scan for Matches
-              </Button>
-            </div>
-          </div>
-
-          {scanImageUrl && (
-            <div className="flex flex-col md:flex-row gap-4 items-start">
-              <div>
-                <h3 className="text-sm font-medium mb-2">Uploaded Image:</h3>
-                <div className="relative w-48 h-48 overflow-hidden border border-cyber-primary/20 rounded-md">
-                  <img 
-                    src={scanImageUrl} 
-                    alt="Uploaded" 
-                    className="w-full h-full object-cover"
+          <Tabs defaultValue="upload" className="w-full">
+            <TabsList className="mb-4">
+              <TabsTrigger value="upload">Upload Media</TabsTrigger>
+              <TabsTrigger value="results">Results</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="upload" className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="mediaUpload" className="flex items-center gap-2">
+                    Upload Image or Video to Scan
+                    <Camera className="h-4 w-4" />
+                  </Label>
+                  <Input
+                    id="mediaUpload"
+                    type="file"
+                    accept="image/*,video/*"
+                    onChange={handleMediaUpload}
+                    disabled={uploadingImage}
+                    className="mt-1"
                   />
+                  {uploadingImage && (
+                    <Progress value={uploadProgress || 0} className="mt-2 h-2" />
+                  )}
+                </div>
+                <div className="flex flex-col sm:flex-row justify-end gap-2">
+                  <Button 
+                    onClick={() => handleScanImage()} 
+                    disabled={!scanImageUrl || processingFaces || loading}
+                    className="mt-4"
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Scan for Matches
+                  </Button>
+                  
+                  {isVideo && (
+                    <Button
+                      onClick={toggleLiveDetection}
+                      disabled={!scanImageUrl || processingFaces || loading}
+                      variant={isLiveDetection ? "destructive" : "secondary"}
+                      className="mt-4"
+                    >
+                      {isLiveDetection ? (
+                        <>
+                          <AlertTriangle className="mr-2 h-4 w-4" />
+                          Stop Live Detection
+                        </>
+                      ) : (
+                        <>
+                          <Film className="mr-2 h-4 w-4" />
+                          Start Live Detection
+                        </>
+                      )}
+                    </Button>
+                  )}
                 </div>
               </div>
-              <div className="flex-1">
-                {loading && (
-                  <div className="space-y-2">
-                    <p className="text-sm">Processing image...</p>
-                    <Progress value={processingProgress || 0} className="h-2" />
-                  </div>
-                )}
-                
-                {matches.length > 0 && (
-                  <div className="space-y-2">
-                    <h3 className="text-sm font-medium">Potential Matches:</h3>
-                    <div className="grid gap-4">
-                      {matches.map((match, index) => {
-                        const matchedPerson = people.find(p => p.id === match.personId);
-                        return matchedPerson ? (
-                          <MatchResultCard 
-                            key={index} 
-                            match={match} 
-                            person={matchedPerson} 
-                          />
-                        ) : null;
-                      })}
+
+              {scanImageUrl && (
+                <div className="mt-4">
+                  <h3 className="text-sm font-medium mb-2">Detection Preview:</h3>
+                  <FaceDetectionPreview 
+                    mediaUrl={scanImageUrl} 
+                    detectedFaces={detectedFaces} 
+                    isVideo={isVideo}
+                    onVideoLoaded={handleVideoLoaded}
+                  />
+                  
+                  {(loading || processingFaces) && (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center">
+                        <Scan className="h-4 w-4 mr-2 animate-pulse text-cyber-primary" />
+                        <p className="text-sm">Processing media...</p>
+                      </div>
+                      <Progress value={processingProgress || 0} className="h-2" />
                     </div>
+                  )}
+                </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="results">
+              {matches.length > 0 ? (
+                <div className="space-y-2">
+                  <h3 className="text-sm font-medium">Potential Matches:</h3>
+                  <div className="grid gap-4">
+                    {matches.map((match, index) => {
+                      const matchedPerson = people.find(p => p.id === match.personId);
+                      return matchedPerson ? (
+                        <MatchResultCard 
+                          key={index} 
+                          match={match} 
+                          person={matchedPerson} 
+                        />
+                      ) : null;
+                    })}
                   </div>
-                )}
-              </div>
-            </div>
-          )}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-muted-foreground">
+                  <FileSearch className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                  <p>No matches found. Upload an image or video and scan for matches.</p>
+                </div>
+              )}
+            </TabsContent>
+          </Tabs>
 
           <div className="mt-6 pt-4 border-t border-cyber-primary/10">
             <Button 

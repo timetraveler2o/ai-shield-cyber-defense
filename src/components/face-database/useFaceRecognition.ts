@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useToast } from "@/components/ui/use-toast";
-import { Person, DetectionMatch } from './types';
+import { Person, DetectionMatch, FaceBox } from './types';
 import * as faceapi from 'face-api.js';
 
 // Flag to track if models are loaded
@@ -10,6 +10,7 @@ let modelsLoaded = false;
 export function useFaceRecognition() {
   const [loading, setLoading] = useState(false);
   const [processingProgress, setProcessingProgress] = useState<number | null>(null);
+  const [detectedFaces, setDetectedFaces] = useState<FaceBox[]>([]);
   const { toast } = useToast();
 
   // Initialize face-api models
@@ -80,22 +81,55 @@ export function useFaceRecognition() {
     }
   };
 
+  // Detect all faces in an image
+  const detectAllFaces = async (imageOrVideoElement: HTMLImageElement | HTMLVideoElement): Promise<FaceBox[]> => {
+    try {
+      await initializeFaceApi();
+      
+      const detections = await faceapi.detectAllFaces(imageOrVideoElement)
+        .withFaceLandmarks();
+      
+      if (!detections || detections.length === 0) {
+        return [];
+      }
+      
+      // Convert to our FaceBox format
+      const faceBoxes = detections.map(detection => {
+        const box = detection.detection.box;
+        return {
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height
+        };
+      });
+      
+      setDetectedFaces(faceBoxes);
+      return faceBoxes;
+    } catch (error) {
+      console.error('Error detecting faces:', error);
+      return [];
+    }
+  };
+
   // Compare a face against the database
   const findMatches = async (imageUrl: string, people: Person[], threshold = 0.6): Promise<DetectionMatch[]> => {
     try {
       await initializeFaceApi();
       setLoading(true);
 
-      // Load image and detect face
+      // Load image and detect faces
       const img = await loadImage(imageUrl);
-      const detection = await faceapi.detectSingleFace(img)
+      
+      // Detect all faces in the image
+      const detections = await faceapi.detectAllFaces(img)
         .withFaceLandmarks()
-        .withFaceDescriptor();
+        .withFaceDescriptors();
 
-      if (!detection) {
+      if (!detections || detections.length === 0) {
         toast({
           title: "Detection Failed",
-          description: "No face detected in the uploaded image.",
+          description: "No faces detected in the uploaded image.",
           variant: "destructive",
         });
         return [];
@@ -126,22 +160,41 @@ export function useFaceRecognition() {
       // Create face matcher
       const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, threshold);
 
-      // Find best match
-      const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
-      
-      if (bestMatch.label !== 'unknown') {
-        const currentDate = new Date();
-        const timestamp = `${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
-        
-        matches.push({
-          personId: bestMatch.label,
-          matchConfidence: 1 - bestMatch.distance, // Convert distance to confidence
-          timestamp: timestamp,
-          location: 'Current surveillance feed',
-          imageUrl: imageUrl
-        });
-      }
+      // Store face boxes for visualization
+      const faceBoxes: FaceBox[] = [];
 
+      // Process each detected face
+      for (const detection of detections) {
+        // Find best match
+        const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+        
+        const box = detection.detection.box;
+        const faceBox: FaceBox = {
+          x: box.x,
+          y: box.y,
+          width: box.width,
+          height: box.height
+        };
+        
+        faceBoxes.push(faceBox);
+        
+        if (bestMatch.label !== 'unknown') {
+          const currentDate = new Date();
+          const timestamp = `${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
+          
+          matches.push({
+            personId: bestMatch.label,
+            matchConfidence: 1 - bestMatch.distance, // Convert distance to confidence
+            timestamp: timestamp,
+            location: 'Current surveillance feed',
+            imageUrl: imageUrl,
+            faceBox: faceBox
+          });
+        }
+      }
+      
+      setDetectedFaces(faceBoxes);
+      
       return matches;
     } catch (error) {
       console.error('Face matching error:', error);
@@ -153,6 +206,91 @@ export function useFaceRecognition() {
       return [];
     } finally {
       setLoading(false);
+    }
+  };
+
+  // Process video frames for face detection
+  const processVideoFrames = async (
+    videoElement: HTMLVideoElement,
+    people: Person[],
+    onMatchesFound: (matches: DetectionMatch[]) => void
+  ) => {
+    if (!videoElement.paused && videoElement.readyState >= 2) {
+      try {
+        // Create a canvas element to capture the current frame
+        const canvas = document.createElement('canvas');
+        canvas.width = videoElement.videoWidth;
+        canvas.height = videoElement.videoHeight;
+        const ctx = canvas.getContext('2d');
+        
+        if (!ctx) return;
+        
+        // Draw the current video frame to the canvas
+        ctx.drawImage(videoElement, 0, 0);
+        
+        // Detect faces in the current frame
+        const detections = await faceapi.detectAllFaces(videoElement)
+          .withFaceLandmarks()
+          .withFaceDescriptors();
+        
+        if (detections && detections.length > 0) {
+          // Get face boxes for visualization
+          const faceBoxes = detections.map(d => {
+            const box = d.detection.box;
+            return {
+              x: box.x,
+              y: box.y,
+              width: box.width,
+              height: box.height
+            };
+          });
+          
+          setDetectedFaces(faceBoxes);
+          
+          // Filter people with face descriptors
+          const peopleWithDescriptors = people.filter(p => p.faceDescriptor && p.faceDescriptor.length > 0);
+          
+          if (peopleWithDescriptors.length > 0) {
+            // Create labeled face descriptors
+            const labeledDescriptors = peopleWithDescriptors.map(person => {
+              return new faceapi.LabeledFaceDescriptors(
+                person.id,
+                [new Float32Array(person.faceDescriptor as number[])]
+              );
+            });
+            
+            // Create face matcher
+            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+            
+            // Find matches for each detected face
+            const matches: DetectionMatch[] = [];
+            
+            for (let i = 0; i < detections.length; i++) {
+              const bestMatch = faceMatcher.findBestMatch(detections[i].descriptor);
+              
+              if (bestMatch.label !== 'unknown') {
+                const currentDate = new Date();
+                const timestamp = `${currentDate.getDate()}/${currentDate.getMonth() + 1}/${currentDate.getFullYear()}`;
+                
+                matches.push({
+                  personId: bestMatch.label,
+                  matchConfidence: 1 - bestMatch.distance,
+                  timestamp: timestamp,
+                  location: 'Video stream',
+                  imageUrl: canvas.toDataURL(),
+                  faceBox: faceBoxes[i]
+                });
+              }
+            }
+            
+            if (matches.length > 0) {
+              onMatchesFound(matches);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error processing video frame:', error);
+      }
     }
   };
 
@@ -170,8 +308,11 @@ export function useFaceRecognition() {
   return {
     loading,
     processingProgress,
+    detectedFaces,
     generateFaceDescriptor,
     findMatches,
+    detectAllFaces,
+    processVideoFrames,
     initializeFaceApi
   };
 }
