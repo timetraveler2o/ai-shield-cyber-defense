@@ -111,7 +111,7 @@ export default function FaceDatabase() {
         setUploadProgress(null);
 
         if (error.message?.includes("bucket not found") || 
-            (error as StorageError).statusCode === 404) {
+            error.error?.statusCode === 404) {
           useToastHook({
             title: "Image upload error",
             description: "Storage bucket 'face-database-images' was not found. Please contact admin.",
