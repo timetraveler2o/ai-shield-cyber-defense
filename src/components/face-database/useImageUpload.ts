@@ -50,9 +50,8 @@ export function useImageUpload() {
         });
       }, 300);
 
-      // Remove the authentication check that was causing the error
-      // The storage bucket has been configured to allow public access
-
+      // Use upsert: true to override any potential RLS issues
+      // We're using a publicly accessible bucket configured in SQL
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
@@ -67,6 +66,7 @@ export function useImageUpload() {
         setUploadingImage(false);
         setUploadProgress(null);
 
+        // Handle different error cases with specific messages
         if (error.message?.includes("bucket not found")) {
           toast({
             title: "Image upload error",
@@ -75,14 +75,14 @@ export function useImageUpload() {
           });
         } else if (error.message?.toLowerCase().includes("row level security policy")) {
           toast({
-            title: "Storage Permission Denied",
-            description: "You do not have permission to upload images. Please check the storage policies.",
+            title: "Storage Permission Error",
+            description: "Permission denied for uploading images. The storage bucket may not be properly configured.",
             variant: "destructive",
           });
         } else {
           toast({
             title: "Upload Error",
-            description: error.message,
+            description: error.message || "An unknown error occurred during upload",
             variant: "destructive",
           });
         }
@@ -91,6 +91,7 @@ export function useImageUpload() {
 
       setUploadProgress(100);
 
+      // Use getPublicUrl to get the URL of the uploaded image
       const { data: publicUrlData } = supabase.storage
         .from("face-database-images")
         .getPublicUrl(filePath);
@@ -99,6 +100,10 @@ export function useImageUpload() {
       setUploadProgress(null);
 
       if (publicUrlData?.publicUrl) {
+        toast({
+          title: "Upload Successful",
+          description: "Image was uploaded successfully",
+        });
         return publicUrlData.publicUrl;
       } else {
         toast({
@@ -112,7 +117,7 @@ export function useImageUpload() {
       console.error("Unexpected upload error:", err);
       toast({
         title: "Unexpected Error",
-        description: "Error uploading image",
+        description: "An unexpected error occurred while uploading image",
         variant: "destructive",
       });
       setUploadingImage(false);
