@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 
 export function useImageUpload() {
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -25,6 +25,8 @@ export function useImageUpload() {
           description: "The file size should not exceed 20MB.",
           variant: "destructive",
         });
+        setUploadingImage(false);
+        setUploadProgress(null);
         return null;
       }
 
@@ -34,6 +36,8 @@ export function useImageUpload() {
           description: "Please upload a JPEG, PNG, WebP image or MP4, WebM video.",
           variant: "destructive",
         });
+        setUploadingImage(false);
+        setUploadProgress(null);
         return null;
       }
 
@@ -41,7 +45,7 @@ export function useImageUpload() {
       const fileName = `${Date.now()}.${fileExt}`;
       const filePath = `${fileName}`;
 
-      // Simulate upload progress
+      // Simulate progress updates
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev !== null && prev < 90) return prev + 10;
@@ -49,17 +53,33 @@ export function useImageUpload() {
         });
       }, 300);
 
-      // Create the bucket if it doesn't exist
-      const { data: bucketData, error: bucketError } = await supabase.storage
-        .getBucket('face-database-images');
-        
-      if (bucketError && bucketError.message.includes("not found")) {
-        await supabase.storage.createBucket('face-database-images', {
-          public: true,
-        });
+      // Check if bucket exists
+      const { data: buckets } = await supabase.storage.listBuckets();
+      const bucketExists = buckets?.some(bucket => bucket.name === 'face-database-images');
+      
+      // Create bucket if it doesn't exist
+      if (!bucketExists) {
+        console.log("Creating storage bucket 'face-database-images'");
+        const { error: createBucketError } = await supabase.storage
+          .createBucket('face-database-images', {
+            public: true,
+          });
+          
+        if (createBucketError) {
+          console.error("Error creating bucket:", createBucketError);
+          clearInterval(progressInterval);
+          setUploadingImage(false);
+          setUploadProgress(null);
+          toast({
+            title: "Storage Error",
+            description: "Failed to create storage bucket. Please try again later.",
+            variant: "destructive",
+          });
+          return null;
+        }
       }
 
-      // Upload to Supabase storage with public access
+      // Upload to Supabase storage
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
@@ -71,8 +91,6 @@ export function useImageUpload() {
 
       if (error) {
         console.error("Storage upload error:", error);
-        setUploadingImage(false);
-        setUploadProgress(null);
         
         // Try to make the bucket public if we got a permission error
         if (error.message.includes("permission") || error.message.includes("policy")) {
@@ -81,10 +99,13 @@ export function useImageUpload() {
             description: "Updating permissions and trying again...",
           });
           
-          // Try to update bucket to be public
+          // Update bucket to be public
           await supabase.storage.updateBucket('face-database-images', {
             public: true,
           });
+          
+          // Create public policies
+          await supabase.storage.from('face-database-images').createSignedUrl(filePath, 60);
           
           // Try upload again
           const secondAttempt = await supabase.storage
@@ -100,6 +121,8 @@ export function useImageUpload() {
               description: secondAttempt.error.message || "Failed to upload file after permission update",
               variant: "destructive",
             });
+            setUploadingImage(false);
+            setUploadProgress(null);
             return null;
           }
           
@@ -124,6 +147,8 @@ export function useImageUpload() {
             description: error.message || "Failed to upload file",
             variant: "destructive",
           });
+          setUploadingImage(false);
+          setUploadProgress(null);
           return null;
         }
       }
@@ -134,7 +159,12 @@ export function useImageUpload() {
         .getPublicUrl(filePath);
 
       setUploadProgress(100);
-      setUploadingImage(false);
+      
+      // Add a short delay to show the 100% progress before resetting
+      setTimeout(() => {
+        setUploadingImage(false);
+        setUploadProgress(null);
+      }, 500);
 
       if (publicUrlData?.publicUrl) {
         toast({

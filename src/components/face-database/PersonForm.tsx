@@ -51,6 +51,8 @@ export function PersonForm({
               value={newPerson.name}
               onChange={(e) => onPersonChange("name", e.target.value)}
               className="mt-1"
+              placeholder="Enter full name"
+              required
             />
           </div>
           <div>
@@ -58,9 +60,10 @@ export function PersonForm({
             <Input
               id="age"
               type="number"
-              value={newPerson.age}
+              value={newPerson.age || ""}
               onChange={(e) => onPersonChange("age", parseInt(e.target.value) || 0)}
               className="mt-1"
+              placeholder="Enter age"
             />
           </div>
           <div>
@@ -70,6 +73,7 @@ export function PersonForm({
               value={newPerson.lastSeen}
               onChange={(e) => onPersonChange("lastSeen", e.target.value)}
               className="mt-1"
+              placeholder="City, State"
             />
           </div>
           <div>
@@ -89,7 +93,7 @@ export function PersonForm({
             </Select>
           </div>
           <div className="md:col-span-2">
-            <Label htmlFor="imageUpload" className="flex items-center gap-2">
+            <Label htmlFor="imageUpload" className="flex items-center gap-2 mb-2">
               Upload Photo
               <Upload className="h-4 w-4" />
             </Label>
@@ -102,14 +106,20 @@ export function PersonForm({
               className="mt-1 block w-full text-sm text-white file:mr-4 file:rounded-md file:border-0 file:bg-cyber-primary file:py-2 file:px-4 file:text-sm file:font-semibold file:text-white file:hover:bg-cyber-primary/90"
             />
             {uploadingImage && (
-              <Progress value={uploadProgress || 0} className="mt-2 h-2" />
+              <div className="mt-2 space-y-1">
+                <p className="text-xs text-cyber-muted">Uploading image...</p>
+                <Progress value={uploadProgress || 0} className="h-2" />
+              </div>
             )}
-            {newPerson.imageUrl && !uploadingImage && (
-              <img
-                src={newPerson.imageUrl}
-                alt="Uploaded Preview"
-                className="mt-2 h-24 w-24 rounded object-cover border border-cyber-primary"
-              />
+            {newPerson.imageUrl && (
+              <div className="mt-3">
+                <p className="text-xs text-cyber-muted mb-2">Image Preview</p>
+                <img
+                  src={newPerson.imageUrl}
+                  alt="Person Preview"
+                  className="h-24 w-24 rounded object-cover border border-cyber-primary"
+                />
+              </div>
             )}
           </div>
         </div>
