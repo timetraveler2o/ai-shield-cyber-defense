@@ -19,3 +19,20 @@ export interface DetectionMatch {
   location: string;
   imageUrl: string;
 }
+
+export interface ChatMessage {
+  id: string;
+  role: 'user' | 'assistant';
+  content: string;
+  timestamp: string;
+  attachments?: {
+    type: 'image' | 'video' | 'audio';
+    url: string;
+  }[];
+}
+
+export interface VoiceState {
+  isRecording: boolean;
+  isProcessing: boolean;
+  audioBlob?: Blob;
+}

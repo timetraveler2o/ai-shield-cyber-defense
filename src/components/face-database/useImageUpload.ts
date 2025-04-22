@@ -14,13 +14,15 @@ export function useImageUpload() {
       setUploadProgress(0);
 
       // Validate file size and type
-      const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
-      const validTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+      const MAX_FILE_SIZE = 20 * 1024 * 1024; // 20MB to accommodate videos
+      const validImageTypes = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
+      const validVideoTypes = ['video/mp4', 'video/webm', 'video/quicktime'];
+      const validTypes = [...validImageTypes, ...validVideoTypes];
 
       if (file.size > MAX_FILE_SIZE) {
         toast({
           title: "File too large",
-          description: "The file size should not exceed 5MB.",
+          description: "The file size should not exceed 20MB.",
           variant: "destructive",
         });
         return null;
@@ -29,7 +31,7 @@ export function useImageUpload() {
       if (!validTypes.includes(file.type)) {
         toast({
           title: "Invalid file type",
-          description: "Please upload a JPEG, PNG, or WebP image.",
+          description: "Please upload a JPEG, PNG, WebP image or MP4, WebM video.",
           variant: "destructive",
         });
         return null;
@@ -47,12 +49,22 @@ export function useImageUpload() {
         });
       }, 300);
 
-      // Upload to Supabase storage
+      // Create the bucket if it doesn't exist
+      const { data: bucketData, error: bucketError } = await supabase.storage
+        .getBucket('face-database-images');
+        
+      if (bucketError && bucketError.message.includes("not found")) {
+        await supabase.storage.createBucket('face-database-images', {
+          public: true,
+        });
+      }
+
+      // Upload to Supabase storage with public access
       const { data, error } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
           cacheControl: "3600",
-          upsert: true
+          upsert: true,
         });
 
       clearInterval(progressInterval);
@@ -62,12 +74,58 @@ export function useImageUpload() {
         setUploadingImage(false);
         setUploadProgress(null);
         
-        toast({
-          title: "Upload Error",
-          description: error.message || "Failed to upload image",
-          variant: "destructive",
-        });
-        return null;
+        // Try to make the bucket public if we got a permission error
+        if (error.message.includes("permission") || error.message.includes("policy")) {
+          toast({
+            title: "Permission Error",
+            description: "Updating permissions and trying again...",
+          });
+          
+          // Try to update bucket to be public
+          await supabase.storage.updateBucket('face-database-images', {
+            public: true,
+          });
+          
+          // Try upload again
+          const secondAttempt = await supabase.storage
+            .from("face-database-images")
+            .upload(filePath, file, {
+              cacheControl: "3600",
+              upsert: true,
+            });
+            
+          if (secondAttempt.error) {
+            toast({
+              title: "Upload Failed",
+              description: secondAttempt.error.message || "Failed to upload file after permission update",
+              variant: "destructive",
+            });
+            return null;
+          }
+          
+          // Get public URL after second attempt
+          const { data: publicUrlData } = supabase.storage
+            .from("face-database-images")
+            .getPublicUrl(filePath);
+            
+          setUploadProgress(100);
+          setUploadingImage(false);
+          
+          if (publicUrlData?.publicUrl) {
+            toast({
+              title: "Success",
+              description: "File uploaded successfully",
+            });
+            return publicUrlData.publicUrl;
+          }
+        } else {
+          toast({
+            title: "Upload Error",
+            description: error.message || "Failed to upload file",
+            variant: "destructive",
+          });
+          return null;
+        }
       }
 
       // Get public URL
@@ -81,13 +139,13 @@ export function useImageUpload() {
       if (publicUrlData?.publicUrl) {
         toast({
           title: "Success",
-          description: "Image uploaded successfully",
+          description: "File uploaded successfully",
         });
         return publicUrlData.publicUrl;
       } else {
         toast({
           title: "Error",
-          description: "Could not get public URL for uploaded image",
+          description: "Could not get public URL for uploaded file",
           variant: "destructive",
         });
         return null;
