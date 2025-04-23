@@ -4,12 +4,24 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useImageUpload } from "./useImageUpload";
 import { useFaceRecognition } from "./useFaceRecognition";
 import { Person, DetectionMatch } from "./types";
-import { Camera, Users, Search, FileSearch, Film, Scan, AlertTriangle } from "lucide-react";
+import { 
+  Camera, 
+  Users, 
+  Search, 
+  FileSearch, 
+  Film, 
+  Scan, 
+  AlertTriangle, 
+  RefreshCw, 
+  User, 
+  Info 
+} from "lucide-react";
 import { MatchResultCard } from "./MatchResultCard";
 import { FaceDetectionPreview } from "./FaceDetectionPreview";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -26,8 +38,10 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     loading, 
     processingProgress, 
     detectedFaces,
-    findMatches, 
-    processVideoFrames 
+    findMatches,
+    processVideoFrames,
+    lastError,
+    retryModelLoading
   } = useFaceRecognition();
   
   const [scanImageUrl, setScanImageUrl] = useState("");
@@ -35,9 +49,20 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
   const [matches, setMatches] = useState<DetectionMatch[]>([]);
   const [isVideo, setIsVideo] = useState(false);
   const [isLiveDetection, setIsLiveDetection] = useState(false);
+  const [activeTab, setActiveTab] = useState("upload");
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoFrameIntervalRef = useRef<number | null>(null);
+
+  // Reset matches when changing tabs
+  useEffect(() => {
+    if (activeTab === "upload") {
+      // Stop any active video detection
+      if (isLiveDetection) {
+        toggleLiveDetection();
+      }
+    }
+  }, [activeTab]);
 
   const handleVideoLoaded = (videoElement: HTMLVideoElement) => {
     videoRef.current = videoElement;
@@ -80,31 +105,37 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     try {
       setProcessingFaces(true);
       const detectedMatches = await findMatches(urlToScan, people);
-      setMatches(detectedMatches);
       
       if (detectedMatches.length === 0) {
         toast({
           title: "No Matches",
-          description: "No matching faces found in the database.",
+          description: "No faces found in the image.",
         });
       } else {
+        setMatches(detectedMatches);
+        
         // Update the lastDetected information for matched persons
         detectedMatches.forEach(match => {
-          const person = people.find(p => p.id === match.personId);
-          if (person) {
-            const updatedPerson = {
-              ...person,
-              lastDetectedAt: match.timestamp,
-              lastDetectedLocation: match.location,
-              status: person.status === 'missing' ? 'investigating' : person.status
-            };
-            onUpdatePerson(updatedPerson);
+          if (match.personId !== 'unknown') {
+            const person = people.find(p => p.id === match.personId);
+            if (person) {
+              const updatedPerson = {
+                ...person,
+                lastDetectedAt: match.timestamp,
+                lastDetectedLocation: match.location,
+                status: person.status === 'missing' ? 'investigating' : person.status
+              };
+              onUpdatePerson(updatedPerson);
+            }
           }
         });
 
+        // Switch to results tab automatically when matches are found
+        setActiveTab("results");
+        
         toast({
-          title: "Match Found",
-          description: `Found ${detectedMatches.length} potential matches in the database.`,
+          title: "Detection Complete",
+          description: `Found ${detectedMatches.length} faces in the image.`,
         });
       }
     } catch (error) {
@@ -141,29 +172,34 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                 setMatches(prev => {
                   // Combine matches, avoiding duplicates based on personId
                   const personIds = new Set(prev.map(m => m.personId));
-                  const filteredNewMatches = newMatches.filter(m => !personIds.has(m.personId));
+                  const filteredNewMatches = newMatches.filter(m => !personIds.has(m.personId) || m.personId === 'unknown');
                   return [...prev, ...filteredNewMatches];
                 });
                 
                 // Update matched person information
                 newMatches.forEach(match => {
-                  const person = people.find(p => p.id === match.personId);
-                  if (person) {
-                    const updatedPerson = {
-                      ...person,
-                      lastDetectedAt: match.timestamp,
-                      lastDetectedLocation: match.location,
-                      status: person.status === 'missing' ? 'investigating' : person.status
-                    };
-                    onUpdatePerson(updatedPerson);
+                  if (match.personId !== 'unknown') {
+                    const person = people.find(p => p.id === match.personId);
+                    if (person) {
+                      const updatedPerson = {
+                        ...person,
+                        lastDetectedAt: match.timestamp,
+                        lastDetectedLocation: match.location,
+                        status: person.status === 'missing' ? 'investigating' : person.status
+                      };
+                      onUpdatePerson(updatedPerson);
+                    }
                   }
                 });
                 
                 // Notify if new matches found
                 toast({
-                  title: "Match Found",
-                  description: `Found ${newMatches.length} new potential matches in the video.`,
+                  title: "Detection Update",
+                  description: `Found ${newMatches.length} new faces in the video.`,
                 });
+                
+                // Switch to results tab automatically
+                setActiveTab("results");
               }
               setProcessingFaces(false);
             });
@@ -199,7 +235,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
 
     for (const person of peopleWithoutDescriptors) {
       try {
-        // Use the updated findMatches function to detect faces
+        // Use the findMatches function to detect faces
         const matches = await findMatches(person.imageUrl, []);
         
         if (matches.length === 0) {
@@ -246,8 +282,31 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
         </CardTitle>
       </CardHeader>
       <CardContent>
+        {lastError && (
+          <Alert variant="destructive" className="mb-4">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Model Loading Error</AlertTitle>
+            <AlertDescription>
+              Failed to load facial recognition models. Please try again.
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={retryModelLoading} 
+                className="ml-2 mt-2"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Retry Loading Models
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+        
         <div className="space-y-6">
-          <Tabs defaultValue="upload" className="w-full">
+          <Tabs 
+            value={activeTab} 
+            onValueChange={setActiveTab} 
+            className="w-full"
+          >
             <TabsList className="mb-4">
               <TabsTrigger value="upload">Upload Media</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
@@ -265,7 +324,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                     type="file"
                     accept="image/*,video/*"
                     onChange={handleMediaUpload}
-                    disabled={uploadingImage}
+                    disabled={uploadingImage || loading}
                     className="mt-1"
                   />
                   {uploadingImage && (
@@ -326,22 +385,46 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                   )}
                 </div>
               )}
+              
+              <div className="bg-cyber-primary/10 p-3 rounded-md mt-4">
+                <div className="flex items-start space-x-2">
+                  <Info className="h-5 w-5 text-cyber-primary flex-shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="text-sm font-medium">Detection Capabilities</h4>
+                    <ul className="text-xs text-muted-foreground mt-1 space-y-1">
+                      <li>• Multi-face detection across images and videos</li>
+                      <li>• Gender and age estimation</li>
+                      <li>• Facial expression analysis</li>
+                      <li>• Live video tracking with suspicious behavior alerts</li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
             </TabsContent>
             
             <TabsContent value="results">
               {matches.length > 0 ? (
                 <div className="space-y-2">
-                  <h3 className="text-sm font-medium">Potential Matches:</h3>
+                  <div className="flex justify-between items-center mb-2">
+                    <h3 className="text-sm font-medium">Detection Results:</h3>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setMatches([])}
+                    >
+                      Clear Results
+                    </Button>
+                  </div>
                   <div className="grid gap-4">
                     {matches.map((match, index) => {
                       const matchedPerson = people.find(p => p.id === match.personId);
-                      return matchedPerson ? (
+                      return (
                         <MatchResultCard 
                           key={index} 
                           match={match} 
                           person={matchedPerson} 
                         />
-                      ) : null;
+                      );
                     })}
                   </div>
                 </div>

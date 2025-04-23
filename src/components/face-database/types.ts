@@ -19,6 +19,9 @@ export interface DetectionMatch {
   location: string;
   imageUrl: string;
   faceBox?: FaceBox;
+  gender?: string;
+  age?: number;
+  expressions?: Record<string, number>;
 }
 
 export interface FaceBox {
@@ -26,6 +29,9 @@ export interface FaceBox {
   y: number;
   width: number;
   height: number;
+  gender?: string;
+  age?: number;
+  expressions?: Record<string, number>;
 }
 
 export interface ChatMessage {
