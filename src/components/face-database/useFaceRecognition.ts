@@ -30,8 +30,8 @@ export function useFaceRecognition() {
       
       console.log('Loading face-api models...');
       
-      // Load models directly from face-api.js CDN
-      const modelUrl = 'https://justadudewhohacks.github.io/face-api.js/models';
+      // Load models from CDN - using a reliable and up-to-date CDN
+      const modelUrl = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
       
       // Load face detection model
       await faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl);
@@ -298,7 +298,10 @@ export function useFaceRecognition() {
     if (!videoElement.paused && videoElement.readyState >= 2) {
       try {
         if (!modelsLoaded) {
-          throw new Error("Models not loaded. Please retry.");
+          await initializeFaceApi();
+          if (!modelsLoaded) {
+            throw new Error("Models not loaded. Please retry.");
+          }
         }
         
         // Create a canvas element to capture the current frame
