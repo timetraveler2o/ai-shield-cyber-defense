@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { Person, DetectionMatch, FaceBox } from './types';
+import { Person, DetectionMatch, FaceBox, FaceExpressions } from './types';
 import * as faceapi from 'face-api.js';
 
 // Flag to track if models are loaded
@@ -13,6 +13,11 @@ export function useFaceRecognition() {
   const [detectedFaces, setDetectedFaces] = useState<FaceBox[]>([]);
   const [lastError, setLastError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Helper function to convert face-api FaceExpressions to our FaceExpressions type
+  const convertExpressions = (apiExpressions: faceapi.FaceExpressions): FaceExpressions => {
+    return apiExpressions as unknown as FaceExpressions;
+  };
 
   // Initialize face-api models with proper error handling
   const initializeFaceApi = async () => {
@@ -139,7 +144,7 @@ export function useFaceRecognition() {
       }
       
       // Convert to our FaceBox format with age and gender info
-      const faceBoxes = detections.map(detection => {
+      const faceBoxes: FaceBox[] = detections.map(detection => {
         const box = detection.detection.box;
         return {
           x: box.x,
@@ -148,7 +153,7 @@ export function useFaceRecognition() {
           height: box.height,
           gender: detection.gender,
           age: Math.round(detection.age),
-          expressions: detection.expressions
+          expressions: convertExpressions(detection.expressions)
         };
       });
       
@@ -231,7 +236,7 @@ export function useFaceRecognition() {
           height: box.height,
           gender: detection.gender,
           age: Math.round(detection.age),
-          expressions: detection.expressions
+          expressions: convertExpressions(detection.expressions)
         };
         
         faceBoxes.push(faceBox);
@@ -249,7 +254,7 @@ export function useFaceRecognition() {
             faceBox: faceBox,
             gender: detection.gender,
             age: Math.round(detection.age),
-            expressions: detection.expressions
+            expressions: convertExpressions(detection.expressions)
           });
         } else {
           // Also add unknown faces with demographic data
@@ -262,7 +267,7 @@ export function useFaceRecognition() {
             faceBox: faceBox,
             gender: detection.gender,
             age: Math.round(detection.age),
-            expressions: detection.expressions
+            expressions: convertExpressions(detection.expressions)
           });
         }
       }
@@ -316,7 +321,7 @@ export function useFaceRecognition() {
         
         if (detections && detections.length > 0) {
           // Get face boxes for visualization with demographic info
-          const faceBoxes = detections.map(d => {
+          const faceBoxes: FaceBox[] = detections.map(d => {
             const box = d.detection.box;
             return {
               x: box.x,
@@ -325,7 +330,7 @@ export function useFaceRecognition() {
               height: box.height,
               gender: d.gender,
               age: Math.round(d.age),
-              expressions: d.expressions
+              expressions: convertExpressions(d.expressions)
             };
           });
           
@@ -364,7 +369,7 @@ export function useFaceRecognition() {
                   faceBox: faceBoxes[i],
                   gender: detections[i].gender,
                   age: Math.round(detections[i].age),
-                  expressions: detections[i].expressions
+                  expressions: convertExpressions(detections[i].expressions)
                 });
               } else {
                 // Also add unknown faces with demographic data
@@ -377,7 +382,7 @@ export function useFaceRecognition() {
                   faceBox: faceBoxes[i],
                   gender: detections[i].gender,
                   age: Math.round(detections[i].age),
-                  expressions: detections[i].expressions
+                  expressions: convertExpressions(detections[i].expressions)
                 });
               }
             }
