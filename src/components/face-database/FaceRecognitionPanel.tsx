@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,7 +8,8 @@ import { Progress } from "@/components/ui/progress";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useImageUpload } from "./useImageUpload";
 import { useFaceRecognition } from "./useFaceRecognition";
-import { Person, DetectionMatch } from "./types";
+import { useNvidiaDeepfakeDetection } from "./useNvidiaDeepfakeDetection";
+import { Person, DetectionMatch, DeepfakeAnalysisResult } from "./types";
 import { 
   Camera, 
   Users, 
@@ -20,10 +20,12 @@ import {
   AlertTriangle, 
   RefreshCw, 
   User, 
-  Info 
+  Info,
+  Shield
 } from "lucide-react";
 import { MatchResultCard } from "./MatchResultCard";
 import { FaceDetectionPreview } from "./FaceDetectionPreview";
+import { DeepfakeReport } from "./DeepfakeReport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface FaceRecognitionPanelProps {
@@ -44,6 +46,11 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     retryModelLoading,
     generateFaceDescriptor
   } = useFaceRecognition();
+  const {
+    analyzeImage,
+    analyzing,
+    analysisProgress
+  } = useNvidiaDeepfakeDetection();
   
   const [scanImageUrl, setScanImageUrl] = useState("");
   const [processingFaces, setProcessingFaces] = useState(false);
@@ -51,6 +58,8 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
   const [isVideo, setIsVideo] = useState(false);
   const [isLiveDetection, setIsLiveDetection] = useState(false);
   const [activeTab, setActiveTab] = useState("upload");
+  const [deepfakeResult, setDeepfakeResult] = useState<DeepfakeAnalysisResult | null>(null);
+  const [isDeepfakeReportOpen, setIsDeepfakeReportOpen] = useState(false);
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoFrameIntervalRef = useRef<number | null>(null);
@@ -91,6 +100,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     
     setIsVideo(isVideoFile);
     setMatches([]);
+    setDeepfakeResult(null);
     
     const mediaUrl = await uploadImage(file);
     
@@ -161,6 +171,51 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
       });
     } finally {
       setProcessingFaces(false);
+    }
+  };
+
+  const handleDeepfakeDetection = async () => {
+    if (!scanImageUrl) {
+      toast({
+        title: "No Media",
+        description: "Please upload an image to analyze for deepfakes.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (isVideo) {
+      toast({
+        title: "Video Not Supported",
+        description: "Deepfake detection currently only supports image files.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    try {
+      const result = await analyzeImage(scanImageUrl);
+      
+      if (result) {
+        result.imageUrl = scanImageUrl;
+        setDeepfakeResult(result);
+        setIsDeepfakeReportOpen(true);
+        
+        toast({
+          title: "Analysis Complete",
+          description: result.isDeepfake 
+            ? "The image appears to be manipulated or synthetically generated."
+            : "The image appears to be authentic.",
+          variant: result.isDeepfake ? "destructive" : "default",
+        });
+      }
+    } catch (error) {
+      console.error("Deepfake analysis error:", error);
+      toast({
+        title: "Analysis Error",
+        description: "An error occurred during deepfake analysis.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -342,6 +397,9 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
             <TabsList className="mb-4">
               <TabsTrigger value="upload">Upload Media</TabsTrigger>
               <TabsTrigger value="results">Results</TabsTrigger>
+              {isDeepfakeReportOpen && (
+                <TabsTrigger value="deepfake">Deepfake Analysis</TabsTrigger>
+              )}
             </TabsList>
             
             <TabsContent value="upload" className="space-y-4">
@@ -371,6 +429,16 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                   >
                     <Search className="mr-2 h-4 w-4" />
                     Scan for Matches
+                  </Button>
+                  
+                  <Button 
+                    onClick={handleDeepfakeDetection} 
+                    disabled={!scanImageUrl || analyzing || isVideo}
+                    variant="outline"
+                    className="mt-4 border-cyber-primary/30"
+                  >
+                    <Shield className="mr-2 h-4 w-4" />
+                    Detect Deepfake
                   </Button>
                   
                   {isVideo && (
@@ -415,6 +483,16 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                       <Progress value={processingProgress || 0} className="h-2" />
                     </div>
                   )}
+                  
+                  {analyzing && (
+                    <div className="mt-2 space-y-2">
+                      <div className="flex items-center">
+                        <Shield className="h-4 w-4 mr-2 animate-pulse text-cyber-primary" />
+                        <p className="text-sm">Analyzing for deepfakes...</p>
+                      </div>
+                      <Progress value={analysisProgress || 0} className="h-2" />
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -427,6 +505,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                       <li>• Multi-face detection across images and videos</li>
                       <li>• Gender and age estimation</li>
                       <li>• Facial expression analysis</li>
+                      <li>• Deepfake detection (images only)</li>
                       <li>• Live video tracking with suspicious behavior alerts</li>
                     </ul>
                   </div>
@@ -465,6 +544,16 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                   <FileSearch className="h-8 w-8 mx-auto mb-2 opacity-50" />
                   <p>No matches found. Upload an image or video and scan for matches.</p>
                 </div>
+              )}
+            </TabsContent>
+            
+            <TabsContent value="deepfake">
+              {deepfakeResult && scanImageUrl && (
+                <DeepfakeReport
+                  result={deepfakeResult}
+                  imageSrc={scanImageUrl}
+                  onClose={() => setIsDeepfakeReportOpen(false)}
+                />
               )}
             </TabsContent>
           </Tabs>

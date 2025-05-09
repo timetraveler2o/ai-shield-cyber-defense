@@ -51,3 +51,15 @@ export interface VoiceState {
   isProcessing: boolean;
   audioBlob?: Blob;
 }
+
+// Deepfake detection types
+export interface DeepfakeAnalysisResult {
+  score: number;
+  isDeepfake: boolean;
+  confidence: number;
+  heatmap?: string;
+  analysisTimestamp: string;
+  imageUrl: string;
+  detectedFaceCount?: number;
+  analysisId?: string;
+}
