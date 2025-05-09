@@ -1,4 +1,3 @@
-
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -30,8 +29,8 @@ import { FaceDetectionPreview } from "./FaceDetectionPreview";
 import { DeepfakeReport } from "./DeepfakeReport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
-  saveDeepfakeResultToLocalStorage,
-  saveDetectionMatchToLocalStorage
+  saveDeepfakeResult,
+  saveDetectionMatch
 } from "@/utils/localStorageUtils";
 
 interface FaceRecognitionPanelProps {
@@ -41,7 +40,7 @@ interface FaceRecognitionPanelProps {
 
 export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognitionPanelProps) {
   const { toast } = useToast();
-  const { uploadImage, uploadingImage, uploadProgress } = useImageUpload();
+  const { uploadState, uploadedImage, uploadImage, resetUpload } = useImageUpload();
   const { 
     loading, 
     processingProgress, 
@@ -153,7 +152,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
       } else {
         // Save matches to local storage
         detectedMatches.forEach(match => {
-          saveDetectionMatchToLocalStorage(match);
+          saveDetectionMatch(match);
         });
         
         setMatches(detectedMatches);
@@ -222,7 +221,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
         setIsDeepfakeReportOpen(true);
         
         // Save the result to local storage
-        saveDeepfakeResultToLocalStorage(result);
+        saveDeepfakeResult(result);
         
         // Automatically switch to the deepfake tab
         setActiveTab("deepfake");
@@ -266,7 +265,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
               if (newMatches.length > 0) {
                 // Save matches to local storage
                 newMatches.forEach(match => {
-                  saveDetectionMatchToLocalStorage(match);
+                  saveDetectionMatch(match);
                 });
                 
                 setMatches(prev => {
@@ -448,11 +447,11 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                     type="file"
                     accept="image/*,video/*"
                     onChange={handleMediaUpload}
-                    disabled={uploadingImage || loading}
+                    disabled={uploadState === "uploading" || loading}
                     className="mt-1"
                   />
-                  {uploadingImage && (
-                    <Progress value={uploadProgress || 0} className="mt-2 h-2" />
+                  {uploadState === "uploading" && (
+                    <Progress value={uploadState === "uploading" ? 100 : 0} className="mt-2 h-2" />
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row justify-end gap-2">

@@ -1,19 +1,25 @@
 
 import { useRef, useEffect, useState } from "react";
-import { FaceBox } from "./types";
+import { FaceBox, UploadState } from "./types";
 
 interface FaceDetectionPreviewProps {
   mediaUrl: string;
   detectedFaces: FaceBox[];
   isVideo?: boolean;
   onVideoLoaded?: (video: HTMLVideoElement) => void;
+  uploadState?: UploadState;
+  onUpload?: (file: File) => Promise<string | null>;
+  onReset?: () => void;
 }
 
 export function FaceDetectionPreview({ 
   mediaUrl, 
   detectedFaces,
   isVideo = false,
-  onVideoLoaded
+  onVideoLoaded,
+  uploadState,
+  onUpload,
+  onReset
 }: FaceDetectionPreviewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);

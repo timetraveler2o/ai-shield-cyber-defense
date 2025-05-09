@@ -21,10 +21,10 @@ export const useImageUpload = () => {
     try {
       // Simulate progress updates
       let progress = 0;
-      const interval = setInterval(() => {
+      const progressInterval = setInterval(() => {
         progress += 10;
         if (progress > 90) {
-          clearInterval(interval);
+          clearInterval(progressInterval);
         }
         
         setUploadState(prev => ({
@@ -56,7 +56,7 @@ export const useImageUpload = () => {
       const dataUrl = await dataUrlPromise;
       
       // Clear the progress interval
-      clearInterval(interval);
+      clearInterval(progressInterval);
 
       // Set to 100% once completed
       setUploadState({
@@ -78,7 +78,7 @@ export const useImageUpload = () => {
     }
   };
 
-  const uploadImage = async (file: File) => {
+  const uploadImage = async (file: File): Promise<string | null> => {
     try {
       return await handleImageUpload(file);
     } catch (error) {
@@ -96,10 +96,16 @@ export const useImageUpload = () => {
     setUploadedImage(null);
   };
 
+  // Add uploadingImage and uploadProgress properties to the return value for compatibility
+  const uploadingImage = uploadState.isUploading;
+  const uploadProgress = uploadState.progress;
+
   return { 
     uploadState, 
     uploadedImage, 
     uploadImage, 
-    resetUpload 
+    resetUpload,
+    uploadingImage,
+    uploadProgress
   };
 };

@@ -25,7 +25,7 @@ export default function DeepfakeDetection() {
       lastSeen: new Date().toISOString(),
       dateAdded: new Date().toISOString(),
       imageUrl: "/placeholder.svg",
-      status: "investigating" // Using the literal type from Person interface
+      status: "investigating" as const // Fix the type by using a const assertion
     }
   ]);
   
@@ -111,9 +111,6 @@ export default function DeepfakeDetection() {
                         <FaceDetectionPreview 
                           mediaUrl={uploadedImage || ""}
                           detectedFaces={[]}
-                          uploadState={uploadState}
-                          onUpload={uploadImage}
-                          onReset={resetUpload}
                         />
                         
                         <Button 

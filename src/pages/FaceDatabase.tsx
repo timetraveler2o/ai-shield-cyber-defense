@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -21,7 +20,11 @@ const FaceDatabase = () => {
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
   const isMobile = useIsMobile();
   const { toast } = useToast();
-  const { uploadImage, uploadingImage, uploadProgress } = useImageUpload();
+  const { uploadState, uploadImage, resetUpload } = useImageUpload();
+  
+  // Extract values from uploadState for compatibility with existing code
+  const uploadingImage = uploadState.isUploading;
+  const uploadProgress = uploadState.progress;
   
   // Add state for people data
   const [people, setPeople] = useState<Person[]>([
