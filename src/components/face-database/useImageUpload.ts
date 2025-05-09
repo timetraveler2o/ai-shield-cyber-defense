@@ -12,6 +12,8 @@ export const useImageUpload = () => {
 
   // Function to upload an image
   const handleImageUpload = async (file: File, onProgress?: (progress: number) => void) => {
+    let progressInterval: number | null = null;
+    
     setUploadState({
       isUploading: true,
       progress: 0,
@@ -21,7 +23,7 @@ export const useImageUpload = () => {
     try {
       // Simulate progress updates
       let progress = 0;
-      const progressInterval = setInterval(() => {
+      progressInterval = window.setInterval(() => {
         progress += 10;
         if (progress > 90) {
           clearInterval(progressInterval);
@@ -56,7 +58,9 @@ export const useImageUpload = () => {
       const dataUrl = await dataUrlPromise;
       
       // Clear the progress interval
-      clearInterval(progressInterval);
+      if (progressInterval !== null) {
+        clearInterval(progressInterval);
+      }
 
       // Set to 100% once completed
       setUploadState({
@@ -69,6 +73,12 @@ export const useImageUpload = () => {
       return dataUrl;
     } catch (error) {
       console.error("Error uploading image:", error);
+      
+      // Make sure to clear the interval if there was an error
+      if (progressInterval !== null) {
+        clearInterval(progressInterval);
+      }
+      
       setUploadState({
         isUploading: false,
         progress: null,

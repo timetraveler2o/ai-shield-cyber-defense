@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
@@ -72,7 +73,10 @@ const FaceDatabase = () => {
     
     try {
       const imageUrl = await uploadImage(file);
-      if (imageUrl) {
+      console.log("Uploaded image URL:", imageUrl);
+      
+      // Only update if we actually got an image URL back
+      if (imageUrl !== null) {
         // Update the newPerson state with the image URL
         handlePersonChange("imageUrl", imageUrl);
         toast({

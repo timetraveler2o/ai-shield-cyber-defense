@@ -447,11 +447,11 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                     type="file"
                     accept="image/*,video/*"
                     onChange={handleMediaUpload}
-                    disabled={uploadState === "uploading" || loading}
+                    disabled={uploadState.isUploading || loading}
                     className="mt-1"
                   />
-                  {uploadState === "uploading" && (
-                    <Progress value={uploadState === "uploading" ? 100 : 0} className="mt-2 h-2" />
+                  {uploadState.isUploading && (
+                    <Progress value={uploadState.progress || 0} className="mt-2 h-2" />
                   )}
                 </div>
                 <div className="flex flex-col sm:flex-row justify-end gap-2">
