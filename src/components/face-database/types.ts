@@ -70,3 +70,14 @@ export interface UploadState {
   progress: number | null;
   error: string | null;
 }
+
+// Officer profile type
+export interface OfficerProfile {
+  name: string;
+  badgeId: string;
+  department: string;
+  location: string;
+  email: string;
+  phone: string;
+  joinedDate: string;
+}

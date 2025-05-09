@@ -13,15 +13,28 @@ import { toast } from "sonner";
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
   const [profileData, setProfileData] = useState({
-    name: "Officer Raj Kumar",
+    name: "Officer",
     badgeId: "CP2345",
     department: "Digital Forensics",
     location: "Chandigarh HQ",
-    email: "raj.kumar@cybercell.gov.in",
+    email: "@cybercell.gov.in",
     phone: "+91 987X XXX345"
   });
 
+  // Function to generate a random phone number format
+  const generateRandomPhoneNumber = () => {
+    const prefix = "+91 ";
+    const middle = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+    const end = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+    return `${prefix}${middle}X XXX${end}`;
+  };
+
   const handleInputChange = (field: string, value: string) => {
+    // If changing phone field, generate a random phone number
+    if (field === "phone") {
+      value = generateRandomPhoneNumber();
+    }
+    
     setProfileData(prev => ({
       ...prev,
       [field]: value
@@ -29,7 +42,14 @@ export default function Profile() {
   };
 
   const handleSaveProfile = () => {
-    // Save profile data to database/state
+    // Generate a new random phone number on save
+    const newPhone = generateRandomPhoneNumber();
+    
+    setProfileData(prev => ({
+      ...prev,
+      phone: newPhone
+    }));
+    
     setIsEditing(false);
     toast.success("Profile updated successfully!", {
       description: "Your profile information has been saved."
