@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { 
   Card, 
@@ -23,10 +22,10 @@ import {
   Clock,
   Loader2,
   AlertCircle,
-  FilePdf
+  FileDown
 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 interface DeepfakeReportProps {
@@ -130,7 +129,7 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
     
     setIsGeneratingReport(false);
   };
-
+  
   const generatePDFReport = async () => {
     try {
       setIsGeneratingPDF(true);
@@ -472,7 +471,7 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
             </>
           ) : (
             <>
-              <FilePdf className="mr-2 h-4 w-4" />
+              <FileDown className="mr-2 h-4 w-4" />
               PDF Report
             </>
           )}
