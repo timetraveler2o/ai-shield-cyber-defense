@@ -53,18 +53,17 @@ export interface VoiceState {
 
 // Deepfake detection types
 export interface DeepfakeAnalysisResult {
+  analysisId?: string;
   score: number;
   isDeepfake: boolean;
   confidence: number;
-  heatmap?: string;
   analysisTimestamp: string;
   imageUrl: string;
   detectedFaceCount?: number;
-  analysisId?: string;
   metadata?: {
     generationMethod?: string;
-    detectedArtifacts?: string[];
     manipulationScore?: number;
+    detectedArtifacts?: string[];
     faceInconsistencies?: number;
   };
 }

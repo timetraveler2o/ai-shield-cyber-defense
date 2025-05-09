@@ -19,9 +19,11 @@ import {
   FileText,
   ShieldCheck,
   ShieldX,
-  BarChart3
+  BarChart3,
+  Clock,
+  Loader2
 } from 'lucide-react';
-import { saveDeepfakeResult } from '@/utils/localStorageUtils';
+import { useToast } from '@/hooks/use-toast';
 
 interface DeepfakeReportProps {
   result: DeepfakeAnalysisResult;
@@ -31,15 +33,14 @@ interface DeepfakeReportProps {
 
 export function DeepfakeReport({ result, imageSrc, onClose }: DeepfakeReportProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
+  const [isDownloadingImage, setIsDownloadingImage] = useState(false);
+  const { toast } = useToast();
   
   const confidencePercent = Math.round(result.confidence * 100);
   const scorePercent = Math.round(result.score * 100);
   
   const generateReport = () => {
     setIsGeneratingReport(true);
-    
-    // Make sure the result is saved to local storage
-    saveDeepfakeResult(result);
     
     // Create content for the report
     const reportContent = `
@@ -100,11 +101,48 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
     
+    toast({
+      title: "Report Generated",
+      description: "Forensic analysis report has been downloaded"
+    });
+    
     setIsGeneratingReport(false);
   };
   
+  const downloadImage = async () => {
+    setIsDownloadingImage(true);
+    
+    try {
+      // Create a blob and download the image
+      const response = await fetch(imageSrc);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `analyzed-image-${new Date().toISOString().substring(0, 10)}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: "Image Downloaded",
+        description: "Analyzed image has been downloaded"
+      });
+    } catch (error) {
+      toast({
+        title: "Download Failed",
+        description: "Could not download the image",
+        variant: "destructive"
+      });
+      console.error("Error downloading image:", error);
+    } finally {
+      setIsDownloadingImage(false);
+    }
+  };
+  
   return (
-    <Card className="border-cyber-primary/20 bg-cyber-dark/90 backdrop-blur-sm">
+    <Card className="border-cyber-primary/20 bg-cyber-dark/90 backdrop-blur-sm overflow-hidden relative">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
           {result.isDeepfake ? (
@@ -119,15 +157,23 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
             </>
           )}
         </CardTitle>
+        <div className="text-xs text-muted-foreground flex items-center gap-1">
+          <Clock className="h-3 w-3" />
+          {new Date(result.analysisTimestamp).toLocaleString()}
+        </div>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
+          <div className="aspect-square relative overflow-hidden rounded-md border border-cyber-primary/20">
             <img 
               src={imageSrc} 
               alt="Analyzed image" 
-              className="w-full h-auto border border-cyber-primary/20 rounded-md"
+              className="w-full h-full object-cover"
             />
+            {/* Overlay mask that shows "hotspots" for deepfakes */}
+            {result.isDeepfake && (
+              <div className="absolute inset-0 bg-gradient-radial from-red-500/0 to-red-500/30 mix-blend-overlay pointer-events-none"></div>
+            )}
           </div>
           
           <div className="space-y-4">
@@ -139,11 +185,11 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
                   <div className="relative pt-1">
                     <Progress 
                       value={100 - scorePercent} 
-                      className="h-2 mt-1" 
+                      className={`h-2 mt-1 ${result.isDeepfake ? "bg-red-900/20" : "bg-green-900/20"}`}
                     />
                     <div className="absolute top-0 left-0 w-full">
                       <Progress 
-                        value={100 - scorePercent} 
+                        value={scorePercent} 
                         className={`h-2 ${result.isDeepfake ? "bg-red-500" : "bg-green-500"}`}
                       />
                     </div>
@@ -194,7 +240,7 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
                       </div>
                     )}
                     
-                    {result.metadata.faceInconsistencies !== undefined && (
+                    {result.metadata.faceInconsistencies !== undefined && result.metadata.faceInconsistencies > 0 && (
                       <div>
                         <span className="text-xs text-muted-foreground">Face inconsistencies:</span>
                         <span className="text-xs font-medium block">{result.metadata.faceInconsistencies}</span>
@@ -209,13 +255,6 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
                     )}
                   </div>
                 )}
-                
-                <div>
-                  <span className="text-xs text-muted-foreground">Analysis time:</span>
-                  <span className="text-sm font-medium block">
-                    {new Date(result.analysisTimestamp).toLocaleString()}
-                  </span>
-                </div>
               </div>
             </div>
             
@@ -231,45 +270,50 @@ AUTHORIZATION LEVEL: LAW ENFORCEMENT / INTERNAL USE ONLY
                   : "This image appears to be authentic with no significant indicators of manipulation."}
               </AlertDescription>
             </Alert>
-            
-            <div className="pt-2">
-              <Button 
-                onClick={generateReport} 
-                className="w-full"
-                disabled={isGeneratingReport}
-              >
-                <FileText className="mr-2 h-4 w-4" />
-                {isGeneratingReport ? "Generating Report..." : "Generate Forensic Report"}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                className="w-full mt-2"
-                onClick={() => {
-                  // Create a blob and download the image
-                  fetch(imageSrc)
-                    .then(res => res.blob())
-                    .then(blob => {
-                      const url = URL.createObjectURL(blob);
-                      const a = document.createElement('a');
-                      a.href = url;
-                      a.download = `analyzed-image-${new Date().toISOString().substring(0, 10)}.png`;
-                      document.body.appendChild(a);
-                      a.click();
-                      document.body.removeChild(a);
-                      URL.revokeObjectURL(url);
-                    });
-                }}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                Download Image with Analysis
-              </Button>
-            </div>
           </div>
         </div>
       </CardContent>
-      <CardFooter className="flex justify-end pt-2 pb-4">
-        <Button variant="secondary" onClick={onClose}>Close Report</Button>
+      <CardFooter className="flex flex-col sm:flex-row gap-2 pt-2 pb-4">
+        <Button 
+          onClick={generateReport} 
+          className="w-full"
+          disabled={isGeneratingReport}
+        >
+          {isGeneratingReport ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Generating...
+            </>
+          ) : (
+            <>
+              <FileText className="mr-2 h-4 w-4" />
+              Generate Forensic Report
+            </>
+          )}
+        </Button>
+        
+        <Button 
+          variant="outline" 
+          className="w-full"
+          onClick={downloadImage}
+          disabled={isDownloadingImage}
+        >
+          {isDownloadingImage ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Downloading...
+            </>
+          ) : (
+            <>
+              <Download className="mr-2 h-4 w-4" />
+              Download Image
+            </>
+          )}
+        </Button>
+        
+        <Button variant="secondary" onClick={onClose} className="w-full sm:w-auto">
+          Remove
+        </Button>
       </CardFooter>
     </Card>
   );
