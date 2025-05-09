@@ -71,6 +71,16 @@ export interface DeepfakeAnalysisResult {
     textureAnalysisScore?: number;
   };
   faceData?: FaceAnalysisData[];
+  legalReferences?: LegalReference[];
+}
+
+// Legal reference type for reports
+export interface LegalReference {
+  law: string;
+  section: string;
+  description: string;
+  applicability: 'high' | 'medium' | 'low';
+  penalties?: string;
 }
 
 // New interface for enhanced face analysis
@@ -120,4 +130,38 @@ export interface LocalStorageState {
   detectionMatches: DetectionMatch[];
   deepfakeResults: DeepfakeAnalysisResult[];
   lastUpdated: string;
+}
+
+// Legal assistant types
+export interface LegalAct {
+  id: string;
+  title: string;
+  category: string;
+  description: string;
+  content: string;
+  year: number;
+  relatedCases: string[];
+  sections?: LegalSection[];
+  isNewAct?: boolean;
+}
+
+export interface LegalSection {
+  id: string;
+  number: string;
+  title: string;
+  content: string;
+  penalties?: string;
+  amendments?: {
+    date: string;
+    description: string;
+  }[];
+}
+
+// AI response type for legal assistant
+export interface AIResponse {
+  content: string;
+  relevantLaws?: string[];
+  confidenceScore?: number;
+  sources?: string[];
+  status: 'complete' | 'error' | 'loading';
 }
