@@ -1,11 +1,12 @@
 
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { Person, DetectionMatch, FaceBox, FaceExpressions } from './types';
+import { Person, DetectionMatch, FaceBox } from './types';
 import * as faceapi from 'face-api.js';
 
 // Flag to track if models are loaded
 let modelsLoaded = false;
+const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
 
 export function useFaceRecognition() {
   const [loading, setLoading] = useState(false);
@@ -14,9 +15,12 @@ export function useFaceRecognition() {
   const [lastError, setLastError] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Helper function to convert face-api FaceExpressions to our FaceExpressions type
-  const convertExpressions = (apiExpressions: faceapi.FaceExpressions): FaceExpressions => {
-    return apiExpressions as unknown as FaceExpressions;
+  // Helper function to convert face-api FaceExpressions to Record<string, number>
+  const convertExpressions = (apiExpressions: faceapi.FaceExpressions): Record<string, number> => {
+    // Convert the object to a plain javascript object
+    return Object.fromEntries(
+      Object.entries(apiExpressions).map(([key, value]) => [key, value as number])
+    );
   };
 
   // Initialize face-api models with proper error handling
@@ -30,31 +34,28 @@ export function useFaceRecognition() {
       
       console.log('Loading face-api models...');
       
-      // Load models from CDN - using a reliable and up-to-date CDN
-      const modelUrl = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api/model';
-      
       // Load face detection model
-      await faceapi.nets.ssdMobilenetv1.loadFromUri(modelUrl);
+      await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
       setProcessingProgress(30);
       console.log('SSD Mobilenet model loaded');
       
       // Load face landmark model
-      await faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl);
+      await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
       setProcessingProgress(50);
       console.log('Face landmark model loaded');
       
       // Load face recognition model
-      await faceapi.nets.faceRecognitionNet.loadFromUri(modelUrl);
+      await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
       setProcessingProgress(70);
       console.log('Face recognition model loaded');
       
       // Load face expression model
-      await faceapi.nets.faceExpressionNet.loadFromUri(modelUrl);
+      await faceapi.nets.faceExpressionNet.loadFromUri(MODEL_URL);
       setProcessingProgress(85);
       console.log('Face expression model loaded');
       
       // Load age and gender model
-      await faceapi.nets.ageGenderNet.loadFromUri(modelUrl);
+      await faceapi.nets.ageGenderNet.loadFromUri(MODEL_URL);
       setProcessingProgress(100);
       console.log('Age and gender model loaded');
       
@@ -89,10 +90,11 @@ export function useFaceRecognition() {
   // Generate face descriptors from an image
   const generateFaceDescriptor = async (imageUrl: string): Promise<number[] | null> => {
     try {
-      await initializeFaceApi();
-      
       if (!modelsLoaded) {
-        throw new Error("Models not loaded. Please retry.");
+        await initializeFaceApi();
+        if (!modelsLoaded) {
+          throw new Error("Models not loaded. Please retry.");
+        }
       }
       
       // Create an image element
@@ -128,10 +130,11 @@ export function useFaceRecognition() {
   // Detect all faces in an image with gender and age detection
   const detectAllFaces = async (imageOrVideoElement: HTMLImageElement | HTMLVideoElement): Promise<FaceBox[]> => {
     try {
-      await initializeFaceApi();
-      
       if (!modelsLoaded) {
-        throw new Error("Models not loaded. Please retry.");
+        await initializeFaceApi();
+        if (!modelsLoaded) {
+          throw new Error("Models not loaded. Please retry.");
+        }
       }
       
       const detections = await faceapi.detectAllFaces(imageOrVideoElement)
@@ -169,12 +172,14 @@ export function useFaceRecognition() {
   // Compare a face against the database
   const findMatches = async (imageUrl: string, people: Person[], threshold = 0.6): Promise<DetectionMatch[]> => {
     try {
-      await initializeFaceApi();
-      setLoading(true);
-      
       if (!modelsLoaded) {
-        throw new Error("Models not loaded. Please retry.");
+        await initializeFaceApi();
+        if (!modelsLoaded) {
+          throw new Error("Models not loaded. Please retry.");
+        }
       }
+      
+      setLoading(true);
 
       // Load image and detect faces
       const img = await loadImage(imageUrl);
@@ -208,6 +213,9 @@ export function useFaceRecognition() {
         });
         return [];
       }
+      
+      console.log(`Found ${peopleWithDescriptors.length} people with descriptors for matching`);
+      console.log(`Found ${detections.length} faces in the uploaded image`);
 
       // Create labeled face descriptors
       const labeledDescriptors = peopleWithDescriptors.map(person => {
@@ -217,8 +225,8 @@ export function useFaceRecognition() {
         );
       });
 
-      // Create face matcher
-      const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, threshold);
+      // Create face matcher with lower threshold for better matching (0.5 instead of 0.6)
+      const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
 
       // Store face boxes for visualization
       const faceBoxes: FaceBox[] = [];
@@ -227,6 +235,7 @@ export function useFaceRecognition() {
       for (const detection of detections) {
         // Find best match
         const bestMatch = faceMatcher.findBestMatch(detection.descriptor);
+        console.log(`Best match result: ${bestMatch.label}, distance: ${bestMatch.distance}`);
         
         const box = detection.detection.box;
         const faceBox: FaceBox = {
@@ -351,8 +360,8 @@ export function useFaceRecognition() {
               );
             });
             
-            // Create face matcher
-            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.6);
+            // Create face matcher with lower threshold for better matching
+            const faceMatcher = new faceapi.FaceMatcher(labeledDescriptors, 0.5);
             
             // Find matches for each detected face
             const matches: DetectionMatch[] = [];

@@ -21,7 +21,7 @@ export interface DetectionMatch {
   faceBox?: FaceBox;
   gender?: string;
   age?: number;
-  expressions?: FaceExpressions;
+  expressions?: Record<string, number>;
 }
 
 export interface FaceBox {
@@ -31,21 +31,10 @@ export interface FaceBox {
   height: number;
   gender?: string;
   age?: number;
-  expressions?: FaceExpressions;
+  expressions?: Record<string, number>;
 }
 
-// Define FaceExpressions interface to match face-api.js structure
-export interface FaceExpressions {
-  neutral?: number;
-  happy?: number;
-  sad?: number;
-  angry?: number;
-  fearful?: number;
-  disgusted?: number;
-  surprised?: number;
-  [key: string]: number | undefined;  // Add index signature for any other expressions
-}
-
+// Define chat message interface
 export interface ChatMessage {
   id: string;
   role: 'user' | 'assistant';

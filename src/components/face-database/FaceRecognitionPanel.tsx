@@ -41,7 +41,8 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     findMatches,
     processVideoFrames,
     lastError,
-    retryModelLoading
+    retryModelLoading,
+    generateFaceDescriptor
   } = useFaceRecognition();
   
   const [scanImageUrl, setScanImageUrl] = useState("");
@@ -53,6 +54,19 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
   
   const videoRef = useRef<HTMLVideoElement>(null);
   const videoFrameIntervalRef = useRef<number | null>(null);
+
+  // Initialize face recognition when component mounts
+  useEffect(() => {
+    const initFaceApi = async () => {
+      try {
+        await retryModelLoading();
+      } catch (error) {
+        console.error("Failed to initialize face recognition:", error);
+      }
+    };
+    
+    initFaceApi();
+  }, []);
 
   // Reset matches when changing tabs
   useEffect(() => {
@@ -235,25 +249,43 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
 
     for (const person of peopleWithoutDescriptors) {
       try {
-        // Use the findMatches function to detect faces
-        const matches = await findMatches(person.imageUrl, []);
+        console.log(`Generating face descriptor for ${person.name} with image: ${person.imageUrl}`);
         
-        if (matches.length === 0) {
+        // Use the generateFaceDescriptor function instead
+        const descriptor = await generateFaceDescriptor(person.imageUrl);
+        
+        if (!descriptor) {
           console.error(`No face detected for ${person.name}`);
+          toast({
+            title: "Face Detection Failed",
+            description: `Could not detect a face in ${person.name}'s image.`,
+            variant: "destructive",
+          });
           continue;
         }
         
-        // At this point, the face descriptor has been generated
+        console.log(`Generated descriptor for ${person.name}: ${descriptor.length} values`);
+        
+        // Update the person with the generated descriptor
         const updatedPerson = { 
           ...person, 
-          // This is a placeholder - in a real implementation, we'd store the descriptor
-          faceDescriptor: Array(128).fill(0).map(() => Math.random() - 0.5)
+          faceDescriptor: descriptor
         };
         
         onUpdatePerson(updatedPerson);
         processedCount++;
+        
+        toast({
+          title: "Face Processed",
+          description: `Generated face descriptor for ${person.name}.`,
+        });
       } catch (error) {
         console.error(`Error processing ${person.name}:`, error);
+        toast({
+          title: "Processing Error",
+          description: `Failed to generate face descriptor for ${person.name}.`,
+          variant: "destructive",
+        });
       }
     }
 
