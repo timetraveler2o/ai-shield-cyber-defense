@@ -100,8 +100,9 @@
     @apply text-slate-600;
   }
 
+  /* Fix circular dependency by directly using the color value */
   .light .bg-cyber-primary {
-    @apply bg-cyber-primary;
+    background-color: #8B5CF6; /* Use the actual color value instead of @apply */
   }
 
   .light .border-cyber-primary\/20 {
