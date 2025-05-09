@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from "react-router-dom";
 import {
   ShieldCheck,
@@ -38,11 +39,6 @@ const menuItems = [
     path: "/fraud",
   },
   {
-    title: "Social Monitoring",
-    icon: MessageSquare,
-    path: "/social",
-  },
-  {
     title: "Ransomware Simulation",
     icon: FileSearch,
     path: "/ransomware",
@@ -51,11 +47,6 @@ const menuItems = [
     title: "VoIP Analysis",
     icon: Smartphone,
     path: "/voip",
-  },
-  {
-    title: "UPI Monitoring",
-    icon: Database,
-    path: "/upi",
   },
   {
     title: "SIM Fraud Detection",

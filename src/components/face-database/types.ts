@@ -81,3 +81,11 @@ export interface OfficerProfile {
   phone: string;
   joinedDate: string;
 }
+
+// Local storage interface
+export interface LocalStorageState {
+  persons: Person[];
+  detectionMatches: DetectionMatch[];
+  deepfakeResults: DeepfakeAnalysisResult[];
+  lastUpdated: string;
+}
