@@ -6,10 +6,13 @@ import { useToast } from "@/hooks/use-toast";
 export function useImageUpload() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<number | null>(null);
+  const [uploadError, setUploadError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const uploadImage = async (file: File): Promise<string | null> => {
     try {
+      // Reset any previous errors
+      setUploadError(null);
       setUploadingImage(true);
       setUploadProgress(0);
 
@@ -20,9 +23,11 @@ export function useImageUpload() {
       const validTypes = [...validImageTypes, ...validVideoTypes];
 
       if (file.size > MAX_FILE_SIZE) {
+        const errorMsg = "The file size should not exceed 20MB.";
+        setUploadError(errorMsg);
         toast({
           title: "File too large",
-          description: "The file size should not exceed 20MB.",
+          description: errorMsg,
           variant: "destructive",
         });
         setUploadingImage(false);
@@ -31,9 +36,11 @@ export function useImageUpload() {
       }
 
       if (!validTypes.includes(file.type)) {
+        const errorMsg = "Please upload a JPEG, PNG, WebP image or MP4, WebM video.";
+        setUploadError(errorMsg);
         toast({
           title: "Invalid file type",
-          description: "Please upload a JPEG, PNG, WebP image or MP4, WebM video.",
+          description: errorMsg,
           variant: "destructive",
         });
         setUploadingImage(false);
@@ -53,72 +60,91 @@ export function useImageUpload() {
         });
       }, 300);
 
-      // Instead of creating a bucket (which requires admin privileges),
-      // let's try to use an existing bucket or create a simpler file upload approach
+      console.log(`Starting upload for file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
       
-      // First, try to upload to the existing bucket if it exists
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      // First, try to upload to the face-database-images bucket
+      let { data: uploadData, error: uploadError } = await supabase.storage
         .from("face-database-images")
         .upload(filePath, file, {
           cacheControl: "3600",
           upsert: true,
         });
 
-      if (uploadError && uploadError.message.includes("bucket not found")) {
-        // The bucket doesn't exist, but we can't create it from the client
-        // Let's use a more generic bucket name that might already exist
-        const { data: generalUploadData, error: generalUploadError } = await supabase.storage
-          .from("public")
-          .upload(`face-images/${filePath}`, file, {
-            cacheControl: "3600",
-            upsert: true,
-          });
+      // If there was an error with the first bucket, try the public bucket
+      if (uploadError) {
+        console.log("First upload attempt error:", uploadError.message);
+        
+        if (uploadError.message.includes("bucket not found")) {
+          console.log("Trying fallback to public bucket...");
+          const { data: generalUploadData, error: generalUploadError } = await supabase.storage
+            .from("public")
+            .upload(`face-images/${filePath}`, file, {
+              cacheControl: "3600",
+              upsert: true,
+            });
 
-        clearInterval(progressInterval);
+          clearInterval(progressInterval);
+            
+          if (generalUploadError) {
+            console.error("Storage upload error (public bucket):", generalUploadError);
+            const errorMsg = "Failed to upload file. Please check if your Supabase project has storage buckets configured.";
+            setUploadError(errorMsg);
+            toast({
+              title: "Upload Error",
+              description: errorMsg,
+              variant: "destructive",
+            });
+            setUploadingImage(false);
+            setUploadProgress(null);
+            return null;
+          }
+            
+          // Get public URL from the general bucket
+          const { data: publicUrlData } = supabase.storage
+            .from("public")
+            .getPublicUrl(`face-images/${filePath}`);
+            
+          setUploadProgress(100);
           
-        if (generalUploadError) {
-          console.error("Storage upload error:", generalUploadError);
+          // Add a short delay to show the 100% progress before resetting
+          setTimeout(() => {
+            setUploadingImage(false);
+            setUploadProgress(null);
+          }, 500);
+          
+          if (publicUrlData?.publicUrl) {
+            console.log("Upload successful to public bucket:", publicUrlData.publicUrl);
+            toast({
+              title: "Success",
+              description: "File uploaded successfully",
+            });
+            return publicUrlData.publicUrl;
+          } else {
+            const errorMsg = "Could not get public URL for uploaded file (public bucket)";
+            setUploadError(errorMsg);
+            console.error(errorMsg);
+            toast({
+              title: "Error",
+              description: errorMsg,
+              variant: "destructive",
+            });
+            return null;
+          }
+        } else {
+          // Handle other upload errors
+          clearInterval(progressInterval);
+          console.error("Storage upload error:", uploadError);
+          const errorMsg = `Upload failed: ${uploadError.message}`;
+          setUploadError(errorMsg);
           toast({
             title: "Upload Error",
-            description: "Failed to upload file. Please check if your Supabase project has storage buckets configured.",
+            description: errorMsg,
             variant: "destructive",
           });
           setUploadingImage(false);
           setUploadProgress(null);
           return null;
         }
-          
-        // Get public URL from the general bucket
-        const { data: publicUrlData } = supabase.storage
-          .from("public")
-          .getPublicUrl(`face-images/${filePath}`);
-          
-        setUploadProgress(100);
-        
-        // Add a short delay to show the 100% progress before resetting
-        setTimeout(() => {
-          setUploadingImage(false);
-          setUploadProgress(null);
-        }, 500);
-        
-        if (publicUrlData?.publicUrl) {
-          toast({
-            title: "Success",
-            description: "File uploaded successfully",
-          });
-          return publicUrlData.publicUrl;
-        }
-      } else if (uploadError) {
-        clearInterval(progressInterval);
-        console.error("Storage upload error:", uploadError);
-        toast({
-          title: "Upload Error",
-          description: "Failed to upload file. Please check your Supabase storage configuration.",
-          variant: "destructive",
-        });
-        setUploadingImage(false);
-        setUploadProgress(null);
-        return null;
       } else {
         // Original upload worked
         clearInterval(progressInterval);
@@ -137,31 +163,34 @@ export function useImageUpload() {
         }, 500);
         
         if (publicUrlData?.publicUrl) {
+          console.log("Upload successful to face-database-images bucket:", publicUrlData.publicUrl);
           toast({
             title: "Success",
             description: "File uploaded successfully",
           });
           return publicUrlData.publicUrl;
+        } else {
+          const errorMsg = "Could not get public URL for uploaded file";
+          setUploadError(errorMsg);
+          console.error(errorMsg);
+          toast({
+            title: "Error",
+            description: errorMsg,
+            variant: "destructive",
+          });
+          return null;
         }
       }
       
-      clearInterval(progressInterval);
-      setUploadingImage(false);
-      setUploadProgress(null);
-      toast({
-        title: "Error",
-        description: "Could not get public URL for uploaded file",
-        variant: "destructive",
-      });
-      return null;
-      
     } catch (err) {
       console.error("Unexpected upload error:", err);
+      const errorMsg = err instanceof Error ? err.message : "An unexpected error occurred while uploading";
+      setUploadError(errorMsg);
       setUploadingImage(false);
       setUploadProgress(null);
       toast({
         title: "Error",
-        description: "An unexpected error occurred while uploading",
+        description: errorMsg,
         variant: "destructive",
       });
       return null;
@@ -172,5 +201,6 @@ export function useImageUpload() {
     uploadImage,
     uploadingImage,
     uploadProgress,
+    uploadError
   };
 }

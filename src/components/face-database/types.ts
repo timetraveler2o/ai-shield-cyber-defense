@@ -63,3 +63,10 @@ export interface DeepfakeAnalysisResult {
   detectedFaceCount?: number;
   analysisId?: string;
 }
+
+// Upload error type
+export interface UploadState {
+  isUploading: boolean;
+  progress: number | null;
+  error: string | null;
+}
