@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { UploadState } from "./types";
 
@@ -79,9 +80,10 @@ export const useImageUpload = () => {
 
   const uploadImage = async (file: File) => {
     try {
-      await handleImageUpload(file);
+      return await handleImageUpload(file);
     } catch (error) {
       console.error("Error in uploadImage:", error);
+      return null;
     }
   };
 
@@ -94,5 +96,10 @@ export const useImageUpload = () => {
     setUploadedImage(null);
   };
 
-  return { uploadState, uploadedImage, uploadImage, resetUpload };
+  return { 
+    uploadState, 
+    uploadedImage, 
+    uploadImage, 
+    resetUpload 
+  };
 };

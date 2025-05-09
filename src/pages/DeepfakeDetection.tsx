@@ -25,7 +25,7 @@ export default function DeepfakeDetection() {
       lastSeen: new Date().toISOString(),
       dateAdded: new Date().toISOString(),
       imageUrl: "/placeholder.svg",
-      status: "investigating" as const // Cast to the specific literal type
+      status: "investigating" // Using the literal type from Person interface
     }
   ]);
   
@@ -49,9 +49,10 @@ export default function DeepfakeDetection() {
   } = useImageUpload();
 
   const {
-    detectDeepfake,
-    isProcessing,
-    deepfakeResult,
+    analyzeImage,
+    analyzing,
+    analysisProgress,
+    analysisError
   } = useNvidiaDeepfakeDetection();
 
   // Handle image upload and analysis
@@ -62,14 +63,14 @@ export default function DeepfakeDetection() {
     }
 
     try {
-      await detectDeepfake(uploadedImage);
+      const result = await analyzeImage(uploadedImage);
       
-      if (deepfakeResult) {
+      if (result) {
         // Save to local storage
-        saveDeepfakeResult(deepfakeResult);
+        saveDeepfakeResult(result);
         
         // Update state
-        setAnalysisResults(prev => [...prev, deepfakeResult]);
+        setAnalysisResults(prev => [...prev, result]);
         
         // Navigate to results tab
         setActiveTab('results');
@@ -108,19 +109,19 @@ export default function DeepfakeDetection() {
                     <CardContent>
                       <div className="space-y-4">
                         <FaceDetectionPreview 
-                          persons={demoPersons}
+                          mediaUrl={uploadedImage || ""}
+                          detectedFaces={[]}
                           uploadState={uploadState}
-                          uploadedImage={uploadedImage}
                           onUpload={uploadImage}
                           onReset={resetUpload}
                         />
                         
                         <Button 
                           onClick={handleAnalyzeImage}
-                          disabled={!uploadedImage || isProcessing}
+                          disabled={!uploadedImage || analyzing}
                           className="w-full"
                         >
-                          {isProcessing ? "Processing..." : "Analyze for Deepfake"}
+                          {analyzing ? "Processing..." : "Analyze for Deepfake"}
                         </Button>
                       </div>
                     </CardContent>
@@ -178,6 +179,8 @@ export default function DeepfakeDetection() {
                           <DeepfakeReport 
                             key={result.analysisId || index}
                             result={result}
+                            imageSrc={result.imageUrl}
+                            onClose={() => {}}
                           />
                         ))}
                       </div>

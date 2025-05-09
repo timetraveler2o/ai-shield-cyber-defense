@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { DeepfakeAnalysisResult } from './types';
-import { saveDeepfakeResultToLocalStorage } from '@/utils/localStorageUtils';
+import { saveDeepfakeResult } from '@/utils/localStorageUtils';
 
 // NVIDIA API key
 const NVIDIA_API_KEY = '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';
@@ -43,7 +43,7 @@ export function useNvidiaDeepfakeDetection() {
       result.imageUrl = imageUrl;
       
       // Save result to local storage
-      saveDeepfakeResultToLocalStorage(result);
+      saveDeepfakeResult(result);
       
       return result;
     } catch (error) {

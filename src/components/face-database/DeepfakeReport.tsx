@@ -21,20 +21,16 @@ import {
   ShieldX,
   BarChart3
 } from 'lucide-react';
-import { saveDeepfakeResultToLocalStorage } from '@/utils/localStorageUtils';
+import { saveDeepfakeResult } from '@/utils/localStorageUtils';
 
 interface DeepfakeReportProps {
-  result: DeepfakeAnalysisResult | null;
+  result: DeepfakeAnalysisResult;
   imageSrc: string;
   onClose: () => void;
 }
 
 export function DeepfakeReport({ result, imageSrc, onClose }: DeepfakeReportProps) {
   const [isGeneratingReport, setIsGeneratingReport] = useState(false);
-  
-  if (!result) {
-    return null;
-  }
   
   const confidencePercent = Math.round(result.confidence * 100);
   const scorePercent = Math.round(result.score * 100);
@@ -43,7 +39,7 @@ export function DeepfakeReport({ result, imageSrc, onClose }: DeepfakeReportProp
     setIsGeneratingReport(true);
     
     // Make sure the result is saved to local storage
-    saveDeepfakeResultToLocalStorage(result);
+    saveDeepfakeResult(result);
     
     // Create content for the report
     const reportContent = `

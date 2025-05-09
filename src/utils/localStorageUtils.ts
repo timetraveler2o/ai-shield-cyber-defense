@@ -1,3 +1,4 @@
+
 import { Person, DetectionMatch, DeepfakeAnalysisResult, OfficerProfile } from "@/components/face-database/types";
 
 // Add officer profile to local storage state
@@ -149,6 +150,9 @@ export const saveDetectionMatch = (match: DetectionMatch) => {
   }
 };
 
+// Save a detection match to local storage (alias function to maintain compatibility)
+export const saveDetectionMatchToLocalStorage = saveDetectionMatch;
+
 // Get all deepfake analysis results from local storage
 export const getDeepfakeResults = (): DeepfakeAnalysisResult[] => {
   const data = localStorage.getItem('cybercrimeMonitoring');
@@ -169,3 +173,6 @@ export const saveDeepfakeResult = (result: DeepfakeAnalysisResult) => {
     localStorage.setItem('cybercrimeMonitoring', JSON.stringify(parsedData));
   }
 };
+
+// Save a deepfake result to local storage (alias function to maintain compatibility)
+export const saveDeepfakeResultToLocalStorage = saveDeepfakeResult;
