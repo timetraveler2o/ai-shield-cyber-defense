@@ -1,3 +1,4 @@
+
 export interface Person {
   id: string;
   name: string;
@@ -54,9 +55,9 @@ export interface VoiceState {
 // Deepfake detection types
 export interface DeepfakeAnalysisResult {
   analysisId?: string;
-  score: number;
+  score: number;  // Higher score = more likely to be deepfake
   isDeepfake: boolean;
-  confidence: number;
+  confidence: number;  // How confident the system is in its assessment
   analysisTimestamp: string;
   imageUrl: string;
   detectedFaceCount?: number;
@@ -65,6 +66,31 @@ export interface DeepfakeAnalysisResult {
     manipulationScore?: number;
     detectedArtifacts?: string[];
     faceInconsistencies?: number;
+    neuralInconsistencies?: number;
+    frequencyAnomalies?: boolean;
+    textureAnalysisScore?: number;
+  };
+  faceData?: FaceAnalysisData[];
+}
+
+// New interface for enhanced face analysis
+export interface FaceAnalysisData {
+  faceId: string;
+  boundingBox: FaceBox;
+  authenticity: {
+    score: number;
+    confidence: number;
+  };
+  demographics?: {
+    age?: number;
+    gender?: string;
+    emotions?: Record<string, number>;
+  };
+  inconsistencies?: {
+    eyes: number;
+    nose: number;
+    mouth: number;
+    overall: number;
   };
 }
 
