@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import {
   getOfficerProfile,
   saveOfficerProfile,
@@ -60,12 +61,13 @@ export function Profile() {
 
   return (
     <div className="container mx-auto p-8">
-      <Card className="max-w-2xl mx-auto bg-cyber-dark border-cyber-primary/20">
-        <CardHeader>
+      <Card className="max-w-2xl mx-auto bg-card border-border">
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-2xl font-bold">
             <User className="mr-2 h-5 w-5 inline-block align-middle" />
             Officer Profile
           </CardTitle>
+          <ThemeToggle />
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4">
@@ -141,7 +143,7 @@ export function Profile() {
               />
             </div>
           </div>
-          <Button onClick={handleSaveProfile} className="w-full bg-cyber-primary hover:bg-cyber-primary/80">
+          <Button onClick={handleSaveProfile} className="w-full bg-primary hover:bg-primary/80">
             Save Profile
           </Button>
         </CardContent>

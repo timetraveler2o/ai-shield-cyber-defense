@@ -23,6 +23,7 @@ import { cn } from "@/lib/utils";
 import { useState, useEffect } from "react";
 import { Logo } from "./Logo";
 import { getOfficerProfile } from "@/utils/localStorageUtils";
+import { ThemeToggle } from "./theme/theme-toggle";
 
 const menuItems = [
   {
@@ -143,9 +144,17 @@ export function AppSidebar() {
             <div className="w-2 h-2 bg-green-500 rounded-full absolute animate-ping" />
           </div>
           {!collapsed && (
-            <Link to="/profile" className="text-xs text-cyber-muted hover:text-white transition-colors">
-              {officerName} • Online
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link to="/profile" className="text-xs text-cyber-muted hover:text-white transition-colors">
+                {officerName} • Online
+              </Link>
+              <ThemeToggle />
+            </div>
+          )}
+          {collapsed && (
+            <div className="mt-4">
+              <ThemeToggle />
+            </div>
           )}
         </div>
       </div>

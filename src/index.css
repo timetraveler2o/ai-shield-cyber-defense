@@ -84,8 +84,31 @@
   }
 
   body {
-    @apply bg-background text-foreground dark;
+    @apply bg-background text-foreground;
   }
+
+  /* Light mode cyber styles */
+  .light .cyber-dark {
+    @apply bg-slate-50;
+  }
+
+  .light .cyber-card {
+    @apply bg-white border-slate-200;
+  }
+
+  .light .text-cyber-muted {
+    @apply text-slate-600;
+  }
+
+  .light .bg-cyber-primary {
+    @apply bg-cyber-primary;
+  }
+
+  .light .border-cyber-primary\/20 {
+    @apply border-slate-300;
+  }
+
+  /* Dark mode styles remain unchanged as they're already in the dark theme */
 }
 
 .data-line {
