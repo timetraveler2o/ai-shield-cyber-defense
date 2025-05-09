@@ -1,4 +1,5 @@
 
+import React, { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
@@ -15,14 +16,13 @@ import { Profile } from "./pages/Profile";
 import LegalAssistant from "./pages/LegalAssistant";
 import NotFound from "./pages/NotFound";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { useEffect } from "react";
 import { initLocalStorage } from "./utils/localStorageUtils";
 import { ThemeProvider } from "./components/theme/theme-provider";
 
 // Initialize QueryClient outside of component
 const queryClient = new QueryClient();
 
-const App = () => {
+const App: React.FC = () => {
   // Initialize local storage when app loads
   useEffect(() => {
     initLocalStorage();
