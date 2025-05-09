@@ -15,7 +15,7 @@ import {
   ChevronRight,
   User,
   FileText,
-  UserCheck
+  Image
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -49,14 +49,9 @@ const menuItems = [
     path: "/voip",
   },
   {
-    title: "SIM Fraud Detection",
-    icon: ShieldCheck,
-    path: "/sim-fraud",
-  },
-  {
-    title: "Face Database",
-    icon: UserCheck,
-    path: "/face-database",
+    title: "Deepfake Detection",
+    icon: Image,
+    path: "/deepfake-detection",
   },
   {
     title: "Crime Report",

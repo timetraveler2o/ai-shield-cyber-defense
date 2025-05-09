@@ -1,3 +1,4 @@
+
 import { useState, useRef, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -21,12 +22,17 @@ import {
   RefreshCw, 
   User, 
   Info,
-  Shield
+  Shield,
+  Image
 } from "lucide-react";
 import { MatchResultCard } from "./MatchResultCard";
 import { FaceDetectionPreview } from "./FaceDetectionPreview";
 import { DeepfakeReport } from "./DeepfakeReport";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { 
+  saveDeepfakeResultToLocalStorage,
+  saveDetectionMatchToLocalStorage
+} from "@/utils/localStorageUtils";
 
 interface FaceRecognitionPanelProps {
   people: Person[];
@@ -102,15 +108,24 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     setMatches([]);
     setDeepfakeResult(null);
     
-    const mediaUrl = await uploadImage(file);
-    
-    if (mediaUrl) {
-      setScanImageUrl(mediaUrl);
+    try {
+      const mediaUrl = await uploadImage(file);
       
-      // If it's a video, don't scan automatically
-      if (!isVideoFile) {
-        handleScanImage(mediaUrl);
+      if (mediaUrl) {
+        setScanImageUrl(mediaUrl);
+        
+        // If it's a video, don't scan automatically
+        if (!isVideoFile) {
+          handleScanImage(mediaUrl);
+        }
       }
+    } catch (error) {
+      console.error("Error uploading media:", error);
+      toast({
+        title: "Upload Failed",
+        description: "Failed to upload media. Please try again.",
+        variant: "destructive"
+      });
     }
   };
 
@@ -136,6 +151,11 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
           description: "No faces found in the image.",
         });
       } else {
+        // Save matches to local storage
+        detectedMatches.forEach(match => {
+          saveDetectionMatchToLocalStorage(match);
+        });
+        
         setMatches(detectedMatches);
         
         // Update the lastDetected information for matched persons
@@ -201,6 +221,12 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
         setDeepfakeResult(result);
         setIsDeepfakeReportOpen(true);
         
+        // Save the result to local storage
+        saveDeepfakeResultToLocalStorage(result);
+        
+        // Automatically switch to the deepfake tab
+        setActiveTab("deepfake");
+        
         toast({
           title: "Analysis Complete",
           description: result.isDeepfake 
@@ -238,6 +264,11 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
             setProcessingFaces(true);
             processVideoFrames(videoRef.current, people, (newMatches) => {
               if (newMatches.length > 0) {
+                // Save matches to local storage
+                newMatches.forEach(match => {
+                  saveDetectionMatchToLocalStorage(match);
+                });
+                
                 setMatches(prev => {
                   // Combine matches, avoiding duplicates based on personId
                   const personIds = new Set(prev.map(m => m.personId));
@@ -301,6 +332,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
 
     setProcessingFaces(true);
     let processedCount = 0;
+    let errorCount = 0;
 
     for (const person of peopleWithoutDescriptors) {
       try {
@@ -316,6 +348,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
             description: `Could not detect a face in ${person.name}'s image.`,
             variant: "destructive",
           });
+          errorCount++;
           continue;
         }
         
@@ -341,13 +374,14 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
           description: `Failed to generate face descriptor for ${person.name}.`,
           variant: "destructive",
         });
+        errorCount++;
       }
     }
 
     setProcessingFaces(false);
     toast({
       title: "Processing Complete",
-      description: `Generated face descriptors for ${processedCount} people.`,
+      description: `Generated face descriptors for ${processedCount} people. Failed for ${errorCount} people.`,
     });
   };
 
@@ -364,8 +398,8 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
     <Card className="border-cyber-primary/20 bg-cyber-dark">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileSearch className="h-5 w-5 text-cyber-primary" />
-          Facial Recognition System
+          <Image className="h-5 w-5 text-cyber-primary" />
+          Deepfake Detection System
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -396,7 +430,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
           >
             <TabsList className="mb-4">
               <TabsTrigger value="upload">Upload Media</TabsTrigger>
-              <TabsTrigger value="results">Results</TabsTrigger>
+              <TabsTrigger value="results">Face Results</TabsTrigger>
               {isDeepfakeReportOpen && (
                 <TabsTrigger value="deepfake">Deepfake Analysis</TabsTrigger>
               )}
@@ -406,7 +440,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="mediaUpload" className="flex items-center gap-2">
-                    Upload Image or Video to Scan
+                    Upload Image or Video to Analyze
                     <Camera className="h-4 w-4" />
                   </Label>
                   <Input
@@ -423,22 +457,22 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                 </div>
                 <div className="flex flex-col sm:flex-row justify-end gap-2">
                   <Button 
-                    onClick={() => handleScanImage()} 
-                    disabled={!scanImageUrl || processingFaces || loading}
-                    className="mt-4"
-                  >
-                    <Search className="mr-2 h-4 w-4" />
-                    Scan for Matches
-                  </Button>
-                  
-                  <Button 
                     onClick={handleDeepfakeDetection} 
                     disabled={!scanImageUrl || analyzing || isVideo}
-                    variant="outline"
-                    className="mt-4 border-cyber-primary/30"
+                    className="mt-4 bg-cyber-primary hover:bg-cyber-primary/80"
                   >
                     <Shield className="mr-2 h-4 w-4" />
                     Detect Deepfake
+                  </Button>
+                  
+                  <Button 
+                    onClick={() => handleScanImage()} 
+                    disabled={!scanImageUrl || processingFaces || loading}
+                    variant="outline"
+                    className="mt-4 border-cyber-primary/30"
+                  >
+                    <Search className="mr-2 h-4 w-4" />
+                    Scan for Faces
                   </Button>
                   
                   {isVideo && (
@@ -466,7 +500,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
 
               {scanImageUrl && (
                 <div className="mt-4">
-                  <h3 className="text-sm font-medium mb-2">Detection Preview:</h3>
+                  <h3 className="text-sm font-medium mb-2">Preview:</h3>
                   <FaceDetectionPreview 
                     mediaUrl={scanImageUrl} 
                     detectedFaces={detectedFaces} 
@@ -502,11 +536,11 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
                   <div>
                     <h4 className="text-sm font-medium">Detection Capabilities</h4>
                     <ul className="text-xs text-muted-foreground mt-1 space-y-1">
-                      <li>• Multi-face detection across images and videos</li>
-                      <li>• Gender and age estimation</li>
-                      <li>• Facial expression analysis</li>
-                      <li>• Deepfake detection (images only)</li>
-                      <li>• Live video tracking with suspicious behavior alerts</li>
+                      <li>• Advanced neural network analysis of image authenticity</li>
+                      <li>• Detection of AI-generated and manipulated images</li>
+                      <li>• Face recognition and demographic analysis</li>
+                      <li>• Deepfake detection with confidence scoring</li>
+                      <li>• Digital forensic report generation</li>
                     </ul>
                   </div>
                 </div>
@@ -517,7 +551,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
               {matches.length > 0 ? (
                 <div className="space-y-2">
                   <div className="flex justify-between items-center mb-2">
-                    <h3 className="text-sm font-medium">Detection Results:</h3>
+                    <h3 className="text-sm font-medium">Face Detection Results:</h3>
                     <Button 
                       variant="outline" 
                       size="sm" 
@@ -542,7 +576,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
               ) : (
                 <div className="text-center py-8 text-muted-foreground">
                   <FileSearch className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                  <p>No matches found. Upload an image or video and scan for matches.</p>
+                  <p>No faces detected yet. Upload an image or video and scan for faces.</p>
                 </div>
               )}
             </TabsContent>
@@ -571,7 +605,7 @@ export function FaceRecognitionPanel({ people, onUpdatePerson }: FaceRecognition
               <Progress value={processingProgress || 0} className="mt-2 h-2" />
             )}
             <p className="text-xs text-muted-foreground mt-2">
-              This will process all missing person images to enable facial recognition.
+              This will process all missing person images to enable face recognition for reference database.
             </p>
           </div>
         </div>

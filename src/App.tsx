@@ -8,8 +8,7 @@ import PhishingDetection from "./pages/PhishingDetection";
 import FraudDetection from "./pages/FraudDetection";
 import RansomwareSimulation from "./pages/RansomwareSimulation";
 import VoIPAnalysis from "./pages/VoIPAnalysis";
-import SIMFraudDetection from "./pages/SIMFraudDetection";
-import FaceDatabase from "./pages/FaceDatabase";
+import DeepfakeDetection from "./pages/DeepfakeDetection";
 import CrimeReport from "./pages/CrimeReport";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
@@ -39,8 +38,7 @@ const App = () => {
             <Route path="/fraud" element={<FraudDetection />} />
             <Route path="/ransomware" element={<RansomwareSimulation />} />
             <Route path="/voip" element={<VoIPAnalysis />} />
-            <Route path="/sim-fraud" element={<SIMFraudDetection />} />
-            <Route path="/face-database" element={<FaceDatabase />} />
+            <Route path="/deepfake-detection" element={<DeepfakeDetection />} />
             <Route path="/crime-report" element={<CrimeReport />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />

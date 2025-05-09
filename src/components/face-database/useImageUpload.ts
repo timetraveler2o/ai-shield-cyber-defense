@@ -62,48 +62,71 @@ export function useImageUpload() {
 
       console.log(`Starting upload for file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
       
-      // First, try to upload to the face-database-images bucket
-      let { data: uploadData, error: uploadError } = await supabase.storage
-        .from("face-database-images")
-        .upload(filePath, file, {
-          cacheControl: "3600",
-          upsert: true,
-        });
-
-      // If there was an error with the first bucket, try the public bucket
-      if (uploadError) {
-        console.log("First upload attempt error:", uploadError.message);
-        
-        if (uploadError.message.includes("bucket not found")) {
-          console.log("Trying fallback to public bucket...");
-          const { data: generalUploadData, error: generalUploadError } = await supabase.storage
-            .from("public")
-            .upload(`face-images/${filePath}`, file, {
-              cacheControl: "3600",
-              upsert: true,
-            });
-
-          clearInterval(progressInterval);
+      try {
+        // First, try to upload to the face-database-images bucket
+        let { data: uploadData, error: uploadError } = await supabase.storage
+          .from("face-database-images")
+          .upload(filePath, file, {
+            cacheControl: "3600",
+            upsert: true,
+          });
+  
+        // If there was an error with the first bucket, try the public bucket
+        if (uploadError) {
+          console.log("First upload attempt error:", uploadError.message);
+          
+          if (uploadError.message.includes("bucket not found")) {
+            console.log("Trying fallback to public bucket...");
+            const { data: generalUploadData, error: generalUploadError } = await supabase.storage
+              .from("public")
+              .upload(`face-images/${filePath}`, file, {
+                cacheControl: "3600",
+                upsert: true,
+              });
+  
+            clearInterval(progressInterval);
+              
+            if (generalUploadError) {
+              console.error("Storage upload error (public bucket):", generalUploadError);
+              throw new Error("Failed to upload to public bucket: " + generalUploadError.message);
+            }
+              
+            // Get public URL from the general bucket
+            const { data: publicUrlData } = supabase.storage
+              .from("public")
+              .getPublicUrl(`face-images/${filePath}`);
+              
+            setUploadProgress(100);
             
-          if (generalUploadError) {
-            console.error("Storage upload error (public bucket):", generalUploadError);
-            const errorMsg = "Failed to upload file. Please check if your Supabase project has storage buckets configured.";
-            setUploadError(errorMsg);
-            toast({
-              title: "Upload Error",
-              description: errorMsg,
-              variant: "destructive",
-            });
-            setUploadingImage(false);
-            setUploadProgress(null);
-            return null;
+            // Add a short delay to show the 100% progress before resetting
+            setTimeout(() => {
+              setUploadingImage(false);
+              setUploadProgress(null);
+            }, 500);
+            
+            if (publicUrlData?.publicUrl) {
+              console.log("Upload successful to public bucket:", publicUrlData.publicUrl);
+              toast({
+                title: "Success",
+                description: "File uploaded successfully",
+              });
+              return publicUrlData.publicUrl;
+            } else {
+              throw new Error("Could not get public URL for uploaded file (public bucket)");
+            }
+          } else {
+            // Handle other upload errors
+            throw new Error(`Upload failed: ${uploadError.message}`);
           }
-            
-          // Get public URL from the general bucket
+        } else {
+          // Original upload worked
+          clearInterval(progressInterval);
+          
+          // Get public URL
           const { data: publicUrlData } = supabase.storage
-            .from("public")
-            .getPublicUrl(`face-images/${filePath}`);
-            
+            .from("face-database-images")
+            .getPublicUrl(filePath);
+          
           setUploadProgress(100);
           
           // Add a short delay to show the 100% progress before resetting
@@ -113,77 +136,53 @@ export function useImageUpload() {
           }, 500);
           
           if (publicUrlData?.publicUrl) {
-            console.log("Upload successful to public bucket:", publicUrlData.publicUrl);
+            console.log("Upload successful to face-database-images bucket:", publicUrlData.publicUrl);
             toast({
               title: "Success",
               description: "File uploaded successfully",
             });
             return publicUrlData.publicUrl;
           } else {
-            const errorMsg = "Could not get public URL for uploaded file (public bucket)";
-            setUploadError(errorMsg);
-            console.error(errorMsg);
-            toast({
-              title: "Error",
-              description: errorMsg,
-              variant: "destructive",
-            });
-            return null;
+            throw new Error("Could not get public URL for uploaded file");
           }
-        } else {
-          // Handle other upload errors
-          clearInterval(progressInterval);
-          console.error("Storage upload error:", uploadError);
-          const errorMsg = `Upload failed: ${uploadError.message}`;
-          setUploadError(errorMsg);
-          toast({
-            title: "Upload Error",
-            description: errorMsg,
-            variant: "destructive",
-          });
-          setUploadingImage(false);
-          setUploadProgress(null);
-          return null;
         }
-      } else {
-        // Original upload worked
-        clearInterval(progressInterval);
+      } catch (storageError) {
+        console.error("Storage error:", storageError);
         
-        // Get public URL
-        const { data: publicUrlData } = supabase.storage
-          .from("face-database-images")
-          .getPublicUrl(filePath);
-        
-        setUploadProgress(100);
-        
-        // Add a short delay to show the 100% progress before resetting
-        setTimeout(() => {
-          setUploadingImage(false);
-          setUploadProgress(null);
-        }, 500);
-        
-        if (publicUrlData?.publicUrl) {
-          console.log("Upload successful to face-database-images bucket:", publicUrlData.publicUrl);
-          toast({
-            title: "Success",
-            description: "File uploaded successfully",
+        // If Supabase upload fails, try base64 fallback for images only
+        if (validImageTypes.includes(file.type)) {
+          console.log("Using base64 fallback for image");
+          clearInterval(progressInterval);
+          
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+              setUploadProgress(100);
+              setTimeout(() => {
+                setUploadingImage(false);
+                setUploadProgress(null);
+              }, 500);
+              
+              toast({
+                title: "Local Storage",
+                description: "Image stored locally as data URL",
+              });
+              
+              resolve(reader.result as string);
+            };
+            reader.onerror = () => {
+              reject(new Error("Failed to convert image to data URL"));
+            };
+            reader.readAsDataURL(file);
           });
-          return publicUrlData.publicUrl;
         } else {
-          const errorMsg = "Could not get public URL for uploaded file";
-          setUploadError(errorMsg);
-          console.error(errorMsg);
-          toast({
-            title: "Error",
-            description: errorMsg,
-            variant: "destructive",
-          });
-          return null;
+          throw storageError;
         }
       }
       
     } catch (err) {
       console.error("Unexpected upload error:", err);
+      clearInterval(progressInterval);
       const errorMsg = err instanceof Error ? err.message : "An unexpected error occurred while uploading";
       setUploadError(errorMsg);
       setUploadingImage(false);

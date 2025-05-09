@@ -62,6 +62,12 @@ export interface DeepfakeAnalysisResult {
   imageUrl: string;
   detectedFaceCount?: number;
   analysisId?: string;
+  metadata?: {
+    generationMethod?: string;
+    detectedArtifacts?: string[];
+    manipulationScore?: number;
+    faceInconsistencies?: number;
+  };
 }
 
 // Upload error type
@@ -89,3 +95,4 @@ export interface LocalStorageState {
   deepfakeResults: DeepfakeAnalysisResult[];
   lastUpdated: string;
 }
+
