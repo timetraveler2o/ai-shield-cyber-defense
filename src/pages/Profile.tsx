@@ -1,3 +1,4 @@
+
 import { User, Settings, Shield, LogOut, Bell, Mail, UserPlus, AlertTriangle, CheckCircle, Clock, Calendar, Briefcase, MapPin, Phone, AtSign, Badge } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -11,13 +12,14 @@ import {
   saveOfficerProfile,
 } from "@/utils/localStorageUtils";
 
-export default function Profile() {
+export function Profile() {
   const { toast } = useToast();
   const [name, setName] = useState("");
-  const [badgeNumber, setBadgeNumber] = useState("");
+  const [badgeId, setBadgeId] = useState("");
   const [email, setEmail] = useState("");
   const [phone, setPhone] = useState("");
-  const [address, setAddress] = useState("");
+  const [department, setDepartment] = useState("");
+  const [location, setLocation] = useState("");
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const [isTwoFactorAuthEnabled, setIsTwoFactorAuthEnabled] = useState(false);
 
@@ -25,10 +27,12 @@ export default function Profile() {
     // Load officer profile from local storage on component mount
     const profile = getOfficerProfile();
     setName(profile.name || "");
-    setBadgeNumber(profile.badgeNumber || "");
+    setBadgeId(profile.badgeId || "");
     setEmail(profile.email || "");
     setPhone(profile.phone || "");
-    setAddress(profile.address || "");
+    setDepartment(profile.department || "");
+    setLocation(profile.location || "");
+    // These properties might not exist in the OfficerProfile type, but we'll add them
     setNotificationsEnabled(profile.notificationsEnabled !== false); // Default to true
     setIsTwoFactorAuthEnabled(profile.isTwoFactorAuthEnabled || false); // Default to false
   }, []);
@@ -37,10 +41,12 @@ export default function Profile() {
     // Save officer profile to local storage
     const profile = {
       name,
-      badgeNumber,
+      badgeId,
       email,
       phone,
-      address,
+      department,
+      location,
+      joinedDate: getOfficerProfile().joinedDate, // Keep existing joined date
       notificationsEnabled,
       isTwoFactorAuthEnabled,
     };
@@ -73,12 +79,30 @@ export default function Profile() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="badgeNumber">Badge Number</Label>
+              <Label htmlFor="badgeId">Badge Number</Label>
               <Input
-                id="badgeNumber"
+                id="badgeId"
                 placeholder="Badge Number"
-                value={badgeNumber}
-                onChange={(e) => setBadgeNumber(e.target.value)}
+                value={badgeId}
+                onChange={(e) => setBadgeId(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="department">Department</Label>
+              <Input
+                id="department"
+                placeholder="Department"
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="location">Location</Label>
+              <Input
+                id="location"
+                placeholder="Location"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
               />
             </div>
             <div className="space-y-2">
@@ -98,15 +122,6 @@ export default function Profile() {
                 placeholder="Phone Number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="address">Address</Label>
-              <Input
-                id="address"
-                placeholder="Address"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
               />
             </div>
             <div className="space-y-2 flex items-center justify-between">
@@ -134,3 +149,5 @@ export default function Profile() {
     </div>
   );
 }
+
+export default Profile;

@@ -39,7 +39,19 @@ export const getOfficerProfile = (): OfficerProfile => {
   if (data) {
     const parsedData: LocalStorageState = JSON.parse(data);
     if (parsedData.officerProfile) {
-      return parsedData.officerProfile;
+      // Ensure all required fields exist with defaults if needed
+      const profile = parsedData.officerProfile;
+      return {
+        name: profile.name || "Officer",
+        badgeId: profile.badgeId || "CP2345",
+        department: profile.department || "Digital Forensics",
+        location: profile.location || "Chandigarh HQ",
+        email: profile.email || "officer@cybercell.gov.in",
+        phone: profile.phone || "+91 987X XXX345",
+        joinedDate: profile.joinedDate || "August 2023",
+        notificationsEnabled: profile.notificationsEnabled !== false,
+        isTwoFactorAuthEnabled: profile.isTwoFactorAuthEnabled || false
+      };
     }
   }
   
@@ -51,7 +63,9 @@ export const getOfficerProfile = (): OfficerProfile => {
     location: "Chandigarh HQ",
     email: "officer@cybercell.gov.in",
     phone: "+91 987X XXX345",
-    joinedDate: "August 2023"
+    joinedDate: "August 2023",
+    notificationsEnabled: true,
+    isTwoFactorAuthEnabled: false
   };
 };
 

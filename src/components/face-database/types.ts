@@ -1,4 +1,3 @@
-
 export interface Person {
   id: string;
   name: string;
@@ -86,6 +85,8 @@ export interface OfficerProfile {
   email: string;
   phone: string;
   joinedDate: string;
+  notificationsEnabled?: boolean;
+  isTwoFactorAuthEnabled?: boolean;
 }
 
 // Local storage interface
@@ -95,4 +96,3 @@ export interface LocalStorageState {
   deepfakeResults: DeepfakeAnalysisResult[];
   lastUpdated: string;
 }
-
