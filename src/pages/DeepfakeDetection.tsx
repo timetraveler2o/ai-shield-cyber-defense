@@ -1,318 +1,194 @@
 
-import { useState, useEffect } from "react";
-import { AppSidebar } from "@/components/AppSidebar";
-import { Header } from "@/components/Header";
-import { FaceRecognitionPanel } from "@/components/face-database/FaceRecognitionPanel";
-import { AnalyticsPanel } from "@/components/face-database/AnalyticsPanel";
-import { PoliceChatbot } from "@/components/face-database/PoliceChatbot";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
-import { Button } from "@/components/ui/button";
-import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { MessageSquare, Image, Shield } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
-import { Person } from "@/components/face-database/types";
-import { v4 as uuidv4 } from "uuid";
-import { useImageUpload } from "@/components/face-database/useImageUpload";
-import { useToast } from "@/hooks/use-toast";
-import { DatabaseContent } from "@/components/face-database/DatabaseContent";
-import { 
-  getAllPersonsFromLocalStorage, 
-  savePersonToLocalStorage,
-  removePersonFromLocalStorage
-} from "@/utils/localStorageUtils";
+import { useState, useEffect } from 'react';
+import { AppSidebar } from '@/components/AppSidebar';
+import { Header } from '@/components/Header';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { FaceDetectionPreview } from '@/components/face-database/FaceDetectionPreview';
+import { DeepfakeReport } from '@/components/face-database/DeepfakeReport';
+import { v4 as uuidv4 } from 'uuid';
+import { toast } from 'sonner';
+import { Person, DeepfakeAnalysisResult } from '@/components/face-database/types';
+import { getDeepfakeResults, saveDeepfakeResult } from '@/utils/localStorageUtils';
+import { useImageUpload } from '@/components/face-database/useImageUpload';
+import { useNvidiaDeepfakeDetection } from '@/components/face-database/useNvidiaDeepfakeDetection';
 
-const DeepfakeDetection = () => {
-  const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const isMobile = useIsMobile();
-  const { toast } = useToast();
-  const { uploadImage, uploadingImage, uploadProgress } = useImageUpload();
+export default function DeepfakeDetection() {
+  const [activeTab, setActiveTab] = useState<string>('upload');
+  const [analysisResults, setAnalysisResults] = useState<DeepfakeAnalysisResult[]>([]);
+  const [demoPersons] = useState<Person[]>([
+    {
+      id: uuidv4(),
+      name: "Demo Person",
+      age: 32,
+      lastSeen: new Date().toISOString(),
+      dateAdded: new Date().toISOString(),
+      imageUrl: "/placeholder.svg",
+      status: "investigating" as const // Cast to the specific literal type
+    }
+  ]);
   
-  // Use local storage for people data
-  const [people, setPeople] = useState<Person[]>([]);
-  
-  // Load data from local storage on component mount
+  // Add sample data if empty
   useEffect(() => {
-    const storedPeople = getAllPersonsFromLocalStorage();
-    if (storedPeople.length > 0) {
-      setPeople(storedPeople);
+    const storedResults = getDeepfakeResults();
+    if (storedResults.length === 0) {
+      // No sample data, show empty state
+      setAnalysisResults([]);
     } else {
-      // Add some default test data if no data exists
-      const defaultPeople = [
-        {
-          id: "1",
-          name: "John Doe",
-          age: 32,
-          lastSeen: "New York, NY",
-          dateAdded: "2023-09-15",
-          imageUrl: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=250",
-          status: "missing"
-        },
-        {
-          id: "2",
-          name: "Jane Smith",
-          age: 28,
-          lastSeen: "Los Angeles, CA",
-          dateAdded: "2023-10-02",
-          imageUrl: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=250",
-          status: "investigating"
-        }
-      ];
-      
-      // Save default people to local storage
-      defaultPeople.forEach(person => {
-        savePersonToLocalStorage(person);
-      });
-      
-      setPeople(defaultPeople);
+      setAnalysisResults(storedResults);
     }
   }, []);
-  
-  // Add state for new person form
-  const [newPerson, setNewPerson] = useState<Omit<Person, "id" | "dateAdded">>({
-    name: "",
-    age: 0,
-    lastSeen: "",
-    imageUrl: "",
-    status: "missing"
-  });
-  
-  const [editingId, setEditingId] = useState<string | null>(null);
-  
-  // Handler functions
-  const handlePersonChange = (field: string, value: string | number) => {
-    setNewPerson(prev => ({ ...prev, [field]: value }));
-  };
-  
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    
-    console.log("Image selected:", file.name);
-    
-    try {
-      const imageUrl = await uploadImage(file);
-      if (imageUrl) {
-        // Update the newPerson state with the image URL
-        handlePersonChange("imageUrl", imageUrl);
-        toast({
-          title: "Image uploaded successfully",
-          description: "The image has been uploaded and attached to the form.",
-        });
-      }
-    } catch (error) {
-      console.error("Error uploading image:", error);
-      toast({
-        title: "Upload failed",
-        description: "There was a problem uploading your image. Please try again.",
-        variant: "destructive",
-      });
-    }
-  };
-  
-  const handleSubmit = () => {
-    if (!newPerson.name) {
-      toast({
-        title: "Missing information",
-        description: "Please enter at least a name for the person.",
-        variant: "destructive",
-      });
+
+  // Custom hooks for image upload and deepfake detection
+  const { 
+    uploadState, 
+    uploadedImage, 
+    uploadImage, 
+    resetUpload 
+  } = useImageUpload();
+
+  const {
+    detectDeepfake,
+    isProcessing,
+    deepfakeResult,
+  } = useNvidiaDeepfakeDetection();
+
+  // Handle image upload and analysis
+  const handleAnalyzeImage = async () => {
+    if (!uploadedImage) {
+      toast.error("Please upload an image first");
       return;
     }
-    
-    if (editingId) {
-      // Update existing person
-      const updatedPerson = {
-        ...people.find(p => p.id === editingId)!,
-        ...newPerson
-      };
+
+    try {
+      await detectDeepfake(uploadedImage);
       
-      // Save to local storage
-      savePersonToLocalStorage(updatedPerson);
-      
-      // Update state
-      setPeople(prev => 
-        prev.map(p => p.id === editingId ? updatedPerson : p)
-      );
-      
-      setEditingId(null);
-      toast({
-        title: "Person updated",
-        description: `${newPerson.name}'s information has been updated.`,
-      });
-    } else {
-      // Add new person
-      const currentDate = new Date().toISOString().split('T')[0];
-      const newPersonWithId = { 
-        ...newPerson, 
-        id: uuidv4(), 
-        dateAdded: currentDate 
-      };
-      
-      // Save to local storage
-      savePersonToLocalStorage(newPersonWithId);
-      
-      // Update state
-      setPeople(prev => [...prev, newPersonWithId]);
-      
-      toast({
-        title: "Person added",
-        description: `${newPerson.name} has been added to the database.`,
-      });
+      if (deepfakeResult) {
+        // Save to local storage
+        saveDeepfakeResult(deepfakeResult);
+        
+        // Update state
+        setAnalysisResults(prev => [...prev, deepfakeResult]);
+        
+        // Navigate to results tab
+        setActiveTab('results');
+        toast.success("Image successfully analyzed");
+      }
+    } catch (error) {
+      toast.error("Failed to analyze image");
+      console.error(error);
     }
-    
-    // Reset form
-    setNewPerson({
-      name: "",
-      age: 0,
-      lastSeen: "",
-      imageUrl: "",
-      status: "missing"
-    });
-  };
-  
-  const handleCancel = () => {
-    setEditingId(null);
-    setNewPerson({
-      name: "",
-      age: 0,
-      lastSeen: "",
-      imageUrl: "",
-      status: "missing"
-    });
-  };
-  
-  const handleEdit = (id: string) => {
-    const person = people.find(p => p.id === id);
-    if (person) {
-      const { id: _, dateAdded: __, ...rest } = person;
-      setNewPerson(rest);
-      setEditingId(id);
-    }
-  };
-  
-  const handleDelete = (id: string) => {
-    // Remove from local storage
-    removePersonFromLocalStorage(id);
-    
-    // Update state
-    setPeople(prev => prev.filter(p => p.id !== id));
-    
-    toast({
-      title: "Person removed",
-      description: "The entry has been removed from the database.",
-    });
-  };
-  
-  const handleUpdatePerson = (updatedPerson: Person) => {
-    // Save to local storage
-    savePersonToLocalStorage(updatedPerson);
-    
-    // Update state
-    setPeople(prev => 
-      prev.map(p => p.id === updatedPerson.id ? updatedPerson : p)
-    );
   };
 
   return (
-    <div className="flex h-screen bg-cyber-background text-white overflow-hidden">
+    <div className="flex h-screen bg-cyber-background overflow-hidden">
       <AppSidebar />
-      <div className="flex flex-col flex-1 overflow-hidden">
-        <Header className="flex-none" />
-        <div className="flex-1 overflow-auto p-6">
-          <div className="flex items-center justify-between mb-6">
-            <h1 className="text-2xl font-semibold">Deepfake Detection System</h1>
-            <div className="flex items-center space-x-2">
-              <div className="h-2 w-2 bg-green-500 rounded-full relative">
-                <div className="absolute w-2 h-2 bg-green-500 rounded-full animate-ping" />
-              </div>
-              <span className="text-xs text-cyber-muted">System Active</span>
-            </div>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Header />
+        <main className="flex-1 overflow-y-auto p-6 bg-cyber-background">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-2xl font-bold mb-6 text-white">Deepfake Detection System</h1>
+            
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="mb-6">
+                <TabsTrigger value="upload">Upload Image</TabsTrigger>
+                <TabsTrigger value="results">Analysis Results</TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="upload">
+                <div className="grid md:grid-cols-2 gap-6">
+                  <Card className="bg-cyber-dark border-cyber-primary/20">
+                    <CardHeader>
+                      <CardTitle>Upload Image</CardTitle>
+                      <CardDescription>
+                        Upload an image to analyze for potential deepfake manipulation
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-4">
+                        <FaceDetectionPreview 
+                          persons={demoPersons}
+                          uploadState={uploadState}
+                          uploadedImage={uploadedImage}
+                          onUpload={uploadImage}
+                          onReset={resetUpload}
+                        />
+                        
+                        <Button 
+                          onClick={handleAnalyzeImage}
+                          disabled={!uploadedImage || isProcessing}
+                          className="w-full"
+                        >
+                          {isProcessing ? "Processing..." : "Analyze for Deepfake"}
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-cyber-dark border-cyber-primary/20">
+                    <CardHeader>
+                      <CardTitle>How it works</CardTitle>
+                      <CardDescription>
+                        Understanding our deepfake detection system
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                      <p className="text-cyber-muted">
+                        Our advanced deepfake detection system uses AI to analyze images for signs of manipulation or artificially generated content.
+                      </p>
+                      
+                      <div className="space-y-2">
+                        <h3 className="font-medium">The system detects:</h3>
+                        <ul className="list-disc pl-5 text-cyber-muted">
+                          <li>Face inconsistencies</li>
+                          <li>Unusual lighting patterns</li>
+                          <li>Artifacts from AI generation</li>
+                          <li>Blending inconsistencies</li>
+                          <li>Unnatural textures</li>
+                        </ul>
+                      </div>
+                      
+                      <div className="bg-cyber-background/30 p-4 rounded-lg">
+                        <h4 className="font-medium mb-2">Analysis Results:</h4>
+                        <p className="text-cyber-muted text-sm">
+                          After analysis, the system provides a confidence score indicating the likelihood of the image being manipulated, along with visual heatmaps highlighting suspicious areas.
+                        </p>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="results">
+                <div className="space-y-6">
+                  {analysisResults.length === 0 ? (
+                    <Card className="bg-cyber-dark border-cyber-primary/20">
+                      <CardContent className="flex flex-col items-center justify-center py-12">
+                        <p className="text-cyber-muted mb-4">No analysis results yet.</p>
+                        <Button onClick={() => setActiveTab('upload')}>
+                          Upload an image to analyze
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ) : (
+                    <>
+                      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        {analysisResults.map((result, index) => (
+                          <DeepfakeReport 
+                            key={result.analysisId || index}
+                            result={result}
+                          />
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
-          
-          <Tabs defaultValue="detection" className="w-full">
-            <TabsList className="mb-6 bg-cyber-dark border border-cyber-primary/20">
-              <TabsTrigger value="detection">
-                <Shield className="w-4 h-4 mr-2" />
-                Deepfake Detection
-              </TabsTrigger>
-              <TabsTrigger value="database">
-                <Image className="w-4 h-4 mr-2" />
-                Reference Database
-              </TabsTrigger>
-              <TabsTrigger value="analytics">
-                <Shield className="w-4 h-4 mr-2" />
-                Analytics
-              </TabsTrigger>
-            </TabsList>
-            
-            <TabsContent value="detection" className="space-y-4">
-              <FaceRecognitionPanel 
-                people={people}
-                onUpdatePerson={handleUpdatePerson}
-              />
-            </TabsContent>
-            
-            <TabsContent value="database" className="space-y-4">
-              <DatabaseContent 
-                people={people}
-                newPerson={newPerson}
-                editingId={editingId}
-                uploadingImage={uploadingImage}
-                uploadProgress={uploadProgress}
-                onPersonChange={handlePersonChange}
-                onImageChange={handleImageChange}
-                onSubmit={handleSubmit}
-                onCancel={handleCancel}
-                onEdit={handleEdit}
-                onDelete={handleDelete}
-              />
-            </TabsContent>
-            
-            <TabsContent value="analytics" className="space-y-4">
-              <AnalyticsPanel people={people} />
-            </TabsContent>
-          </Tabs>
-        </div>
-        
-        {/* Floating chat button for mobile */}
-        {isMobile ? (
-          <Drawer open={isAssistantOpen} onOpenChange={setIsAssistantOpen}>
-            <DrawerTrigger asChild>
-              <Button 
-                className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-cyber-primary hover:bg-cyber-primary/80 shadow-lg"
-                size="icon"
-              >
-                <MessageSquare className="h-6 w-6" />
-              </Button>
-            </DrawerTrigger>
-            <DrawerContent className="h-[70vh]">
-              <div className="p-4">
-                <PoliceChatbot />
-              </div>
-            </DrawerContent>
-          </Drawer>
-        ) : (
-          <>
-            <Button 
-              className="fixed bottom-6 right-6 h-14 w-14 rounded-full bg-cyber-primary hover:bg-cyber-primary/80 shadow-lg"
-              size="icon"
-              onClick={() => setIsAssistantOpen(true)}
-            >
-              <MessageSquare className="h-6 w-6" />
-            </Button>
-            
-            <Dialog open={isAssistantOpen} onOpenChange={setIsAssistantOpen}>
-              <DialogContent className="max-w-3xl p-0 border-cyber-primary/30 bg-cyber-dark/80 backdrop-blur-sm">
-                <DialogTitle className="sr-only">Police Cybercrime Assistant</DialogTitle>
-                <PoliceChatbot />
-              </DialogContent>
-            </Dialog>
-          </>
-        )}
+        </main>
       </div>
     </div>
   );
-};
-
-export default DeepfakeDetection;
+}

@@ -12,6 +12,7 @@ import DeepfakeDetection from "./pages/DeepfakeDetection";
 import CrimeReport from "./pages/CrimeReport";
 import Settings from "./pages/Settings";
 import Profile from "./pages/Profile";
+import LegalAssistant from "./pages/LegalAssistant";
 import NotFound from "./pages/NotFound";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { useEffect } from "react";
@@ -40,6 +41,7 @@ const App = () => {
             <Route path="/voip" element={<VoIPAnalysis />} />
             <Route path="/deepfake-detection" element={<DeepfakeDetection />} />
             <Route path="/crime-report" element={<CrimeReport />} />
+            <Route path="/legal-assistant" element={<LegalAssistant />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/profile" element={<Profile />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

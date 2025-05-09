@@ -13,37 +13,106 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 
 interface HeaderProps {
   className?: string;
 }
 
+// Type for notification
+interface Notification {
+  id: number;
+  title: string;
+  message: string;
+  time: string;
+  read: boolean;
+}
+
 export function Header({ className }: HeaderProps) {
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1,
-      title: "High Risk Alert",
-      message: "Potential phishing campaign detected targeting government emails",
-      time: "10 minutes ago",
-      read: false
-    },
-    {
-      id: 2,
-      title: "UPI Fraud Pattern",
-      message: "Multiple similar transactions detected from known fraud source",
-      time: "43 minutes ago",
-      read: false
-    },
-    {
-      id: 3,
-      title: "Social Media Alert",
-      message: "Trending hashtag associated with potential scam detected",
-      time: "2 hours ago",
-      read: false
-    }
-  ]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  const [searchQuery, setSearchQuery] = useState("");
+
+  // Initialize notifications
+  useEffect(() => {
+    const initialNotifications = [
+      {
+        id: 1,
+        title: "High Risk Alert",
+        message: "Potential phishing campaign detected targeting government emails",
+        time: "10 minutes ago",
+        read: false
+      },
+      {
+        id: 2,
+        title: "UPI Fraud Pattern",
+        message: "Multiple similar transactions detected from known fraud source",
+        time: "43 minutes ago",
+        read: false
+      },
+      {
+        id: 3,
+        title: "Social Media Alert",
+        message: "Trending hashtag associated with potential scam detected",
+        time: "2 hours ago",
+        read: false
+      }
+    ];
+    
+    setNotifications(initialNotifications);
+    
+    // Set up periodic notifications
+    const notificationInterval = setInterval(() => {
+      const newNotificationTypes = [
+        {
+          title: "Security Alert",
+          messages: [
+            "Suspicious login attempt detected from IP: 103.54.xx.xx",
+            "Potential data breach attempt blocked",
+            "Firewall blocked 5 unauthorized access attempts"
+          ]
+        },
+        {
+          title: "Case Update",
+          messages: [
+            "New evidence uploaded for Case #CP-5823",
+            "Witness statement added to ongoing investigation",
+            "Digital forensics report ready for review"
+          ]
+        },
+        {
+          title: "Legal Update",
+          messages: [
+            "New cybersecurity law amendment published",
+            "IT Act Section 66 reference updated in guidelines",
+            "Supreme Court ruling on digital evidence admissibility"
+          ]
+        }
+      ];
+      
+      // Select random notification type and message
+      const typeIndex = Math.floor(Math.random() * newNotificationTypes.length);
+      const messageIndex = Math.floor(Math.random() * newNotificationTypes[typeIndex].messages.length);
+      
+      const newNotification = {
+        id: Date.now(),
+        title: newNotificationTypes[typeIndex].title,
+        message: newNotificationTypes[typeIndex].messages[messageIndex],
+        time: "Just now",
+        read: false
+      };
+      
+      setNotifications(prev => [newNotification, ...prev]);
+      
+      // Show toast for new notification
+      toast.info(`New notification: ${newNotification.title}`, {
+        description: newNotification.message
+      });
+      
+    }, 60000); // Every minute
+    
+    return () => clearInterval(notificationInterval);
+  }, []);
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
@@ -61,6 +130,13 @@ export function Header({ className }: HeaderProps) {
     toast.success("All notifications marked as read");
   };
 
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      toast.info(`Searching for: ${searchQuery}`);
+    }
+  };
+
   return (
     <header
       className={cn(
@@ -75,13 +151,15 @@ export function Header({ className }: HeaderProps) {
       </div>
 
       <div className="flex items-center space-x-3">
-        <div className="relative hidden md:block">
+        <form onSubmit={handleSearch} className="relative hidden md:block">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-cyber-muted h-4 w-4" />
           <Input
-            placeholder="Search threats..."
+            placeholder="Search laws, cases, threats..."
             className="pl-10 w-64 bg-cyber-background/40 border-cyber-primary/20 text-white placeholder:text-cyber-muted"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
           />
-        </div>
+        </form>
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -94,7 +172,7 @@ export function Header({ className }: HeaderProps) {
               )}
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-80">
+          <DropdownMenuContent align="end" className="w-80 max-h-[70vh] overflow-y-auto">
             <DropdownMenuLabel className="flex justify-between items-center">
               <span>Notifications</span>
               {unreadCount > 0 && (

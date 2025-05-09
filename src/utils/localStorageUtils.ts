@@ -1,140 +1,171 @@
+import { Person, DetectionMatch, DeepfakeAnalysisResult, OfficerProfile } from "@/components/face-database/types";
 
-import { LocalStorageState, Person, DetectionMatch, DeepfakeAnalysisResult } from "@/components/face-database/types";
+// Add officer profile to local storage state
+export interface LocalStorageState {
+  persons: Person[];
+  detectionMatches: DetectionMatch[];
+  deepfakeResults: DeepfakeAnalysisResult[];
+  lastUpdated: string;
+  officerProfile?: OfficerProfile;
+}
 
-const STORAGE_KEY = 'cyber_investigation_data';
-
-// Initialize local storage with default values
-export const initLocalStorage = (): void => {
-  const initialState: LocalStorageState = {
-    persons: [],
-    detectionMatches: [],
-    deepfakeResults: [],
-    lastUpdated: new Date().toISOString(),
-  };
-
-  // Only initialize if not already present
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(initialState));
-  }
-};
-
-// Get all data from local storage
-export const getLocalStorageData = (): LocalStorageState => {
-  try {
-    const data = localStorage.getItem(STORAGE_KEY);
-    if (!data) {
-      initLocalStorage();
-      return getLocalStorageData();
-    }
-    return JSON.parse(data) as LocalStorageState;
-  } catch (error) {
-    console.error('Error getting data from local storage:', error);
-    initLocalStorage();
-    return getLocalStorageData();
-  }
-};
-
-// Save all data to local storage
-export const saveLocalStorageData = (data: LocalStorageState): void => {
-  try {
-    // Update lastUpdated timestamp
-    const updatedData = {
-      ...data,
+// Initialize local storage with empty collections
+export const initLocalStorage = () => {
+  const existingData = localStorage.getItem('cybercrimeMonitoring');
+  if (!existingData) {
+    const initialState: LocalStorageState = {
+      persons: [],
+      detectionMatches: [],
+      deepfakeResults: [],
       lastUpdated: new Date().toISOString(),
+      officerProfile: {
+        name: "Officer",
+        badgeId: "CP2345",
+        department: "Digital Forensics",
+        location: "Chandigarh HQ",
+        email: "officer@cybercell.gov.in",
+        phone: "+91 987X XXX345",
+        joinedDate: "August 2023"
+      }
     };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(updatedData));
-  } catch (error) {
-    console.error('Error saving data to local storage:', error);
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(initialState));
   }
 };
 
-// Person-related functions
-export const savePersonToLocalStorage = (person: Person): void => {
-  try {
-    const data = getLocalStorageData();
-    
-    // Check if person already exists, update if it does
-    const index = data.persons.findIndex(p => p.id === person.id);
-    if (index !== -1) {
-      data.persons[index] = person;
-    } else {
-      data.persons.push(person);
+// Get the officer profile from local storage
+export const getOfficerProfile = (): OfficerProfile => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    if (parsedData.officerProfile) {
+      return parsedData.officerProfile;
     }
-    
-    saveLocalStorageData(data);
-  } catch (error) {
-    console.error('Error saving person to local storage:', error);
+  }
+  
+  // Default profile if not found
+  return {
+    name: "Officer",
+    badgeId: "CP2345",
+    department: "Digital Forensics",
+    location: "Chandigarh HQ",
+    email: "officer@cybercell.gov.in",
+    phone: "+91 987X XXX345",
+    joinedDate: "August 2023"
+  };
+};
+
+// Save the officer profile to local storage
+export const saveOfficerProfile = (profile: OfficerProfile) => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    parsedData.officerProfile = profile;
+    parsedData.lastUpdated = new Date().toISOString();
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(parsedData));
   }
 };
 
-export const getAllPersonsFromLocalStorage = (): Person[] => {
-  try {
-    const data = getLocalStorageData();
-    return data.persons;
-  } catch (error) {
-    console.error('Error getting persons from local storage:', error);
-    return [];
+// Get all persons from local storage
+export const getPersons = (): Person[] => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    return parsedData.persons || [];
+  }
+  return [];
+};
+
+// Save a new person to local storage
+export const savePerson = (person: Person) => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    parsedData.persons = [...(parsedData.persons || []), person];
+    parsedData.lastUpdated = new Date().toISOString();
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(parsedData));
+  } else {
+    // If no existing data, initialize local storage
+    const initialState: LocalStorageState = {
+      persons: [person],
+      detectionMatches: [],
+      deepfakeResults: [],
+      lastUpdated: new Date().toISOString(),
+      officerProfile: {
+        name: "Officer",
+        badgeId: "CP2345",
+        department: "Digital Forensics",
+        location: "Chandigarh HQ",
+        email: "officer@cybercell.gov.in",
+        phone: "+91 987X XXX345",
+        joinedDate: "August 2023"
+      }
+    };
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(initialState));
   }
 };
 
-export const removePersonFromLocalStorage = (personId: string): void => {
-  try {
-    const data = getLocalStorageData();
-    data.persons = data.persons.filter(person => person.id !== personId);
-    saveLocalStorageData(data);
-  } catch (error) {
-    console.error('Error removing person from local storage:', error);
+// Update an existing person in local storage
+export const updatePerson = (updatedPerson: Person) => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    parsedData.persons = parsedData.persons?.map(person =>
+      person.id === updatedPerson.id ? updatedPerson : person
+    ) || [updatedPerson];
+    parsedData.lastUpdated = new Date().toISOString();
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(parsedData));
   }
 };
 
-// DetectionMatch-related functions
-export const saveDetectionMatchToLocalStorage = (match: DetectionMatch): void => {
-  try {
-    const data = getLocalStorageData();
-    data.detectionMatches.push(match);
-    saveLocalStorageData(data);
-  } catch (error) {
-    console.error('Error saving detection match to local storage:', error);
+// Delete a person from local storage
+export const deletePerson = (personId: string) => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    parsedData.persons = parsedData.persons?.filter(person => person.id !== personId) || [];
+    parsedData.lastUpdated = new Date().toISOString();
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(parsedData));
   }
 };
 
-export const getAllDetectionMatchesFromLocalStorage = (): DetectionMatch[] => {
-  try {
-    const data = getLocalStorageData();
-    return data.detectionMatches;
-  } catch (error) {
-    console.error('Error getting detection matches from local storage:', error);
-    return [];
+// Get all detection matches from local storage
+export const getDetectionMatches = (): DetectionMatch[] => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    return parsedData.detectionMatches || [];
+  }
+  return [];
+};
+
+// Save a new detection match to local storage
+export const saveDetectionMatch = (match: DetectionMatch) => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    parsedData.detectionMatches = [...(parsedData.detectionMatches || []), match];
+    parsedData.lastUpdated = new Date().toISOString();
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(parsedData));
   }
 };
 
-// DeepfakeResult-related functions
-export const saveDeepfakeResultToLocalStorage = (result: DeepfakeAnalysisResult): void => {
-  try {
-    const data = getLocalStorageData();
-    data.deepfakeResults.push(result);
-    saveLocalStorageData(data);
-  } catch (error) {
-    console.error('Error saving deepfake result to local storage:', error);
+// Get all deepfake analysis results from local storage
+export const getDeepfakeResults = (): DeepfakeAnalysisResult[] => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    return parsedData.deepfakeResults || [];
   }
+  return [];
 };
 
-export const getAllDeepfakeResultsFromLocalStorage = (): DeepfakeAnalysisResult[] => {
-  try {
-    const data = getLocalStorageData();
-    return data.deepfakeResults;
-  } catch (error) {
-    console.error('Error getting deepfake results from local storage:', error);
-    return [];
-  }
-};
-
-// Clear all data from local storage
-export const clearLocalStorage = (): void => {
-  try {
-    localStorage.removeItem(STORAGE_KEY);
-    initLocalStorage();
-  } catch (error) {
-    console.error('Error clearing local storage:', error);
+// Save a new deepfake analysis result to local storage
+export const saveDeepfakeResult = (result: DeepfakeAnalysisResult) => {
+  const data = localStorage.getItem('cybercrimeMonitoring');
+  if (data) {
+    const parsedData: LocalStorageState = JSON.parse(data);
+    parsedData.deepfakeResults = [...(parsedData.deepfakeResults || []), result];
+    parsedData.lastUpdated = new Date().toISOString();
+    localStorage.setItem('cybercrimeMonitoring', JSON.stringify(parsedData));
   }
 };

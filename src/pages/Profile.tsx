@@ -1,25 +1,33 @@
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AppSidebar } from "@/components/AppSidebar";
 import { Header } from "@/components/Header";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Shield, User, MessageSquare, Clock, FileText, BadgeCheck, Check } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
-import { Badge as BadgeIcon } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
+import { OfficerProfile } from "@/components/face-database/types";
+import { getOfficerProfile, saveOfficerProfile } from "@/utils/localStorageUtils";
 
 export default function Profile() {
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState({
-    name: "Officer",
-    badgeId: "CP2345",
-    department: "Digital Forensics",
-    location: "Chandigarh HQ",
-    email: "@cybercell.gov.in",
-    phone: "+91 987X XXX345"
+  const [profileData, setProfileData] = useState<OfficerProfile>({
+    name: "",
+    badgeId: "",
+    department: "",
+    location: "",
+    email: "",
+    phone: "",
+    joinedDate: ""
   });
+
+  useEffect(() => {
+    // Get profile data from local storage on component mount
+    const storedProfile = getOfficerProfile();
+    setProfileData(storedProfile);
+  }, []);
 
   // Function to generate a random phone number format
   const generateRandomPhoneNumber = () => {
@@ -45,10 +53,13 @@ export default function Profile() {
     // Generate a new random phone number on save
     const newPhone = generateRandomPhoneNumber();
     
-    setProfileData(prev => ({
-      ...prev,
+    const updatedProfile = {
+      ...profileData,
       phone: newPhone
-    }));
+    };
+    
+    setProfileData(updatedProfile);
+    saveOfficerProfile(updatedProfile);
     
     setIsEditing(false);
     toast.success("Profile updated successfully!", {

@@ -15,12 +15,14 @@ import {
   ChevronRight,
   User,
   FileText,
-  Image
+  Image,
+  Book
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Logo } from "./Logo";
+import { getOfficerProfile } from "@/utils/localStorageUtils";
 
 const menuItems = [
   {
@@ -59,6 +61,11 @@ const menuItems = [
     path: "/crime-report",
   },
   {
+    title: "Legal Assistant",
+    icon: Book,
+    path: "/legal-assistant",
+  },
+  {
     title: "Profile",
     icon: User,
     path: "/profile",
@@ -72,8 +79,15 @@ const menuItems = [
 
 export function AppSidebar() {
   const [collapsed, setCollapsed] = useState(false);
+  const [officerName, setOfficerName] = useState("Officer");
   const location = useLocation();
   const currentPath = location.pathname;
+
+  useEffect(() => {
+    // Get officer name from local storage
+    const profile = getOfficerProfile();
+    setOfficerName(profile.name || "Officer");
+  }, []);
 
   return (
     <div
@@ -128,7 +142,11 @@ export function AppSidebar() {
           <div className="w-2 h-2 bg-green-500 rounded-full relative">
             <div className="w-2 h-2 bg-green-500 rounded-full absolute animate-ping" />
           </div>
-          {!collapsed && <span className="text-xs text-cyber-muted">System Online</span>}
+          {!collapsed && (
+            <Link to="/profile" className="text-xs text-cyber-muted hover:text-white transition-colors">
+              {officerName} • Online
+            </Link>
+          )}
         </div>
       </div>
     </div>
