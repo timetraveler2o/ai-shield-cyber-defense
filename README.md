@@ -31,25 +31,19 @@ AI Suraksha Kavach (AI Security Shield) is an advanced cybersecurity solution th
 ## 📷 Screenshots
 
 <div align="center">
-  <img src="https://github.com/user-attachments/assets/d74479fe-a8eb-411b-9794-ad5d04ba8f55" alt="Phishing Detection" width="400"/>
-  <img src="https://github.com/user-attachments/assets/b526db44-6319-4846-9a41-950e58693667" alt="Fraud Detection" width="400"/>
+ 
 </div>
 
-<div align="center">
-  <img src="https://github.com/user-attachments/assets/5343b46b-c1d6-4998-aca4-b19939d56096" alt="Ransomware Simulation" width="400"/>
-  <img src="https://github.com/user-attachments/assets/c02866a0-e4c6-45c8-9327-a95fc3d4dff8" alt="VoIP Analysis" width="400"/>
-</div>
 
 ## ⚙️ File Upload System
 
 Our platform features a robust file upload system for various cybersecurity tasks:
 
 ### Face Database Upload
-![Face Upload System](https://github.com/user-attachments/assets/d74479fe-a8eb-411b-9794-ad5d04ba8f55)
 > The face recognition database allows officers to upload images for identity verification and criminal database matching with progressive upload indicators and real-time feedback.
 
 ### Deepfake Detection Upload
-![Deepfake Detection](https://github.com/user-attachments/assets/5343b46b-c1d6-4998-aca4-b19939d56096)
+
 > Our deepfake detection system accepts video and image uploads to analyze for signs of AI manipulation, providing confidence scores and forensic analysis.
 
 ### Document Analysis Upload
