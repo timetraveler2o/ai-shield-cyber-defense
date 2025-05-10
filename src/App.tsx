@@ -15,6 +15,8 @@ import Settings from "./pages/Settings";
 import { Profile } from "./pages/Profile";
 import LegalAssistant from "./pages/LegalAssistant";
 import NotFound from "./pages/NotFound";
+import Support from "./pages/Support";
+import About from "./pages/About";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { initLocalStorage } from "./utils/localStorageUtils";
 import { ThemeProvider } from "./components/theme/theme-provider";
@@ -46,6 +48,8 @@ const App: React.FC = () => {
               <Route path="/legal-assistant" element={<LegalAssistant />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/profile" element={<Profile />} />
+              <Route path="/support" element={<Support />} />
+              <Route path="/about" element={<About />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

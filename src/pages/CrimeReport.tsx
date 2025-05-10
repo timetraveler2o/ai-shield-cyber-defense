@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { FileText, Check, Upload, AlertCircle, Search } from "lucide-react";
+import { FileText, Check, Upload, AlertCircle, Search, X } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { toast } from "sonner";
 import { 
   Table, 
   TableBody, 
@@ -17,6 +18,7 @@ import {
   TableHeader, 
   TableRow 
 } from "@/components/ui/table";
+import { FileUpload } from "@/components/FileUpload";
 
 interface ReportData {
   id: string;
@@ -27,7 +29,7 @@ interface ReportData {
 }
 
 export default function CrimeReport() {
-  const { toast } = useToast();
+  const { toast: uiToast } = useToast();
   const [reports, setReports] = useState<ReportData[]>([
     {
       id: "CR-2025-001",
@@ -60,15 +62,20 @@ export default function CrimeReport() {
     contactPhone: ""
   });
 
+  const [uploadedFiles, setUploadedFiles] = useState<File[]>([]);
   const [trackingId, setTrackingId] = useState("");
   const [searchResult, setSearchResult] = useState<ReportData | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
 
+  const handleFileUpload = (files: File[]) => {
+    setUploadedFiles(files);
+  };
+
   const handleSubmitReport = () => {
     // Validate form
     if (!newReport.type || !newReport.description || !newReport.contactName || !newReport.contactEmail) {
-      toast({
+      uiToast({
         title: "Missing information",
         description: "Please fill in all required fields",
         variant: "destructive"
@@ -104,11 +111,12 @@ export default function CrimeReport() {
         contactPhone: ""
       });
       
+      setUploadedFiles([]);
       setIsSubmitting(false);
       
-      toast({
-        title: "Report submitted successfully",
-        description: `Your tracking ID is ${reportId}. Save this for future reference.`,
+      // Show toast notification
+      toast.success("Report submitted successfully", {
+        description: `Your tracking ID is ${reportId}. Save this for future reference.`
       });
       
       // Automatically set the tracking ID for immediate search
@@ -119,7 +127,7 @@ export default function CrimeReport() {
 
   const handleTrackReport = () => {
     if (!trackingId) {
-      toast({
+      uiToast({
         title: "Missing tracking ID",
         description: "Please enter a tracking ID to search",
         variant: "destructive"
@@ -135,15 +143,22 @@ export default function CrimeReport() {
       setSearchResult(report || null);
       
       if (!report) {
-        toast({
-          title: "Report not found",
-          description: "No report found with the provided tracking ID",
-          variant: "destructive"
+        toast.error("Report not found", {
+          description: "No report found with the provided tracking ID"
+        });
+      } else {
+        toast.success("Report found", {
+          description: `Showing details for report ${trackingId}`
         });
       }
       
       setIsSearching(false);
     }, 1000);
+  };
+
+  const handleClearSearch = () => {
+    setTrackingId("");
+    setSearchResult(null);
   };
 
   return (
@@ -230,18 +245,14 @@ export default function CrimeReport() {
                     />
                   </div>
                   
-                  <div className="border border-dashed border-cyber-primary/20 rounded-md p-4">
-                    <div className="flex items-center justify-center flex-col">
-                      <Upload className="h-8 w-8 text-cyber-muted mb-2" />
-                      <p className="text-sm text-cyber-muted">
-                        Drag & drop evidence files here or
-                      </p>
-                      <Button variant="outline" size="sm" className="mt-2">
-                        Browse Files
-                      </Button>
-                      <p className="text-xs text-cyber-muted mt-2">
-                        Accepted formats: JPG, PNG, PDF, DOC, DOCX (Max. 10 MB)
-                      </p>
+                  <div>
+                    <Label>Evidence Files</Label>
+                    <div className="mt-1">
+                      <FileUpload 
+                        onFileUpload={handleFileUpload}
+                        acceptedFormats=".jpg,.jpeg,.png,.pdf,.doc,.docx"
+                        maxSizeMB={10}
+                      />
                     </div>
                   </div>
                 </div>
@@ -272,11 +283,25 @@ export default function CrimeReport() {
                 <CardContent>
                   <div className="space-y-4">
                     <div className="flex gap-2">
-                      <Input
-                        placeholder="Enter your tracking ID (e.g., CR-2025-001)"
-                        value={trackingId}
-                        onChange={(e) => setTrackingId(e.target.value)}
-                      />
+                      <div className="relative flex-1">
+                        <Input
+                          placeholder="Enter your tracking ID (e.g., CR-2025-001)"
+                          value={trackingId}
+                          onChange={(e) => setTrackingId(e.target.value)}
+                          className="pr-8"
+                        />
+                        {trackingId && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-0 top-0 h-full w-8"
+                            onClick={handleClearSearch}
+                          >
+                            <X className="h-4 w-4" />
+                            <span className="sr-only">Clear</span>
+                          </Button>
+                        )}
+                      </div>
                       <Button 
                         onClick={handleTrackReport}
                         disabled={isSearching}
@@ -355,7 +380,10 @@ export default function CrimeReport() {
                     </TableHeader>
                     <TableBody>
                       {reports.slice().reverse().slice(0, 5).map((report) => (
-                        <TableRow key={report.id}>
+                        <TableRow key={report.id} className="cursor-pointer hover:bg-cyber-primary/10" onClick={() => {
+                          setTrackingId(report.id);
+                          setSearchResult(report);
+                        }}>
                           <TableCell className="font-medium">{report.id}</TableCell>
                           <TableCell>{report.type}</TableCell>
                           <TableCell>{report.date}</TableCell>

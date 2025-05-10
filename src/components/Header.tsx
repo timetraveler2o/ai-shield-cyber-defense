@@ -1,6 +1,6 @@
 
 import { Link } from "react-router-dom";
-import { Bell, Search, User } from "lucide-react";
+import { Bell, Search, User, Trash } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -130,6 +130,11 @@ export function Header({ className }: HeaderProps) {
     toast.success("All notifications marked as read");
   };
 
+  const clearAllNotifications = () => {
+    setNotifications([]);
+    toast.success("All notifications cleared");
+  };
+
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -175,11 +180,24 @@ export function Header({ className }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-80 max-h-[70vh] overflow-y-auto">
             <DropdownMenuLabel className="flex justify-between items-center">
               <span>Notifications</span>
-              {unreadCount > 0 && (
-                <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-7">
-                  Mark all as read
-                </Button>
-              )}
+              <div className="flex space-x-1">
+                {unreadCount > 0 && (
+                  <Button variant="ghost" size="sm" onClick={markAllAsRead} className="text-xs h-7">
+                    Mark all read
+                  </Button>
+                )}
+                {notifications.length > 0 && (
+                  <Button 
+                    variant="ghost" 
+                    size="sm" 
+                    onClick={clearAllNotifications} 
+                    className="text-xs h-7 text-red-500 hover:text-red-600 hover:bg-red-50"
+                  >
+                    <Trash className="h-3 w-3 mr-1" />
+                    Clear all
+                  </Button>
+                )}
+              </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             {notifications.length === 0 ? (
@@ -222,7 +240,12 @@ export function Header({ className }: HeaderProps) {
             <DropdownMenuItem asChild>
               <Link to="/settings">Settings</Link>
             </DropdownMenuItem>
-            <DropdownMenuItem>Support</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/support">Support</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link to="/about">About</Link>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Logout</DropdownMenuItem>
           </DropdownMenuContent>

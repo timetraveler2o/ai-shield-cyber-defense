@@ -1,162 +1,153 @@
 
 import { Link, useLocation } from "react-router-dom";
-import {
-  ShieldCheck,
-  LayoutDashboard,
-  AlertTriangle,
-  Mail,
-  Database,
-  Users,
-  MessageSquare,
-  FileSearch,
-  Smartphone,
-  Settings,
-  ChevronLeft,
-  ChevronRight,
-  User,
-  FileText,
-  Image,
-  Book
+import React, { useState } from "react";
+import { 
+  ShieldAlert, FileText, Fingerprint, Smartphone, 
+  AlertTriangle, Bot, Phone, Binary, Settings, HelpCircle, Info
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { Logo } from "@/components/Logo";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
-import { Logo } from "./Logo";
-import { getOfficerProfile } from "@/utils/localStorageUtils";
-import { ThemeToggle } from "./theme/theme-toggle";
-
-const menuItems = [
-  {
-    title: "Dashboard",
-    icon: LayoutDashboard,
-    path: "/",
-  },
-  {
-    title: "Phishing Detection",
-    icon: Mail,
-    path: "/phishing",
-  },
-  {
-    title: "Fraud Detection",
-    icon: AlertTriangle,
-    path: "/fraud",
-  },
-  {
-    title: "Ransomware Simulation",
-    icon: FileSearch,
-    path: "/ransomware",
-  },
-  {
-    title: "VoIP Analysis",
-    icon: Smartphone,
-    path: "/voip",
-  },
-  {
-    title: "Deepfake Detection",
-    icon: Image,
-    path: "/deepfake-detection",
-  },
-  {
-    title: "Crime Report",
-    icon: FileText,
-    path: "/crime-report",
-  },
-  {
-    title: "Legal Assistant",
-    icon: Book,
-    path: "/legal-assistant",
-  },
-  {
-    title: "Profile",
-    icon: User,
-    path: "/profile",
-  },
-  {
-    title: "Settings",
-    icon: Settings,
-    path: "/settings",
-  },
-];
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
 
 export function AppSidebar() {
-  const [collapsed, setCollapsed] = useState(false);
-  const [officerName, setOfficerName] = useState("Officer");
   const location = useLocation();
-  const currentPath = location.pathname;
+  const [collapsed, setCollapsed] = useState(false);
 
-  useEffect(() => {
-    // Get officer name from local storage
-    const profile = getOfficerProfile();
-    setOfficerName(profile.name || "Officer");
-  }, []);
+  const navItems = [
+    {
+      name: "Dashboard",
+      icon: <ShieldAlert className="h-5 w-5" />,
+      path: "/",
+    },
+    {
+      name: "Phishing Detection",
+      icon: <AlertTriangle className="h-5 w-5" />,
+      path: "/phishing",
+    },
+    {
+      name: "Fraud Detection",
+      icon: <Binary className="h-5 w-5" />,
+      path: "/fraud",
+    },
+    {
+      name: "Deepfake Detection",
+      icon: <Fingerprint className="h-5 w-5" />,
+      path: "/deepfake-detection",
+    },
+    {
+      name: "Ransomware Simulation",
+      icon: <Bot className="h-5 w-5" />,
+      path: "/ransomware",
+    },
+    {
+      name: "VoIP Analysis",
+      icon: <Phone className="h-5 w-5" />,
+      path: "/voip",
+    },
+    {
+      name: "Legal Assistant",
+      icon: <FileText className="h-5 w-5" />,
+      path: "/legal-assistant",
+    },
+    {
+      name: "Crime Report",
+      icon: <Smartphone className="h-5 w-5" />,
+      path: "/crime-report",
+    },
+    {
+      name: "Settings",
+      icon: <Settings className="h-5 w-5" />,
+      path: "/settings",
+    },
+    {
+      name: "Support",
+      icon: <HelpCircle className="h-5 w-5" />,
+      path: "/support",
+    },
+    {
+      name: "About",
+      icon: <Info className="h-5 w-5" />,
+      path: "/about",
+    },
+  ];
 
   return (
     <div
       className={cn(
-        "h-screen bg-cyber-dark border-r border-cyber-primary/20 flex flex-col transition-all duration-300 relative fbi-stripe",
-        collapsed ? "w-20" : "w-64"
+        "bg-cyber-dark/60 backdrop-blur-sm border-r border-cyber-primary/20 h-screen",
+        collapsed ? "w-16" : "w-64",
+        "transition-all duration-300 flex flex-col"
       )}
     >
-      <div className="p-4 border-b border-cyber-primary/20 flex items-center justify-between">
-        <Logo showText={!collapsed} className={cn(collapsed && "justify-center")} />
+      <div className={cn("border-b border-cyber-primary/20 h-16 flex items-center px-4 justify-between", collapsed && "justify-center")}>
+        <Logo size={collapsed ? 40 : 140} />
         <Button
           variant="ghost"
           size="icon"
+          className="text-cyber-muted hover:text-white hover:bg-cyber-primary/20"
           onClick={() => setCollapsed(!collapsed)}
-          className="text-cyber-muted hover:text-white hover:bg-cyber-primary/10"
         >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+          {collapsed ? "→" : "←"}
         </Button>
       </div>
-      
-      <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-2">
-          {menuItems.map((item) => (
+      <div className="flex-1 py-4 overflow-y-auto scrollbar-none">
+        <nav className="px-2 space-y-1">
+          {navItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <Tooltip key={item.path} delayDuration={collapsed ? 100 : 1000}>
+                <TooltipTrigger asChild>
+                  <Link
+                    to={item.path}
+                    className={cn(
+                      "flex items-center px-3 py-2 rounded-md transition-colors",
+                      isActive
+                        ? "bg-cyber-primary/10 text-cyber-primary"
+                        : "text-cyber-muted hover:bg-cyber-primary/5 hover:text-white",
+                      collapsed && "justify-center"
+                    )}
+                  >
+                    <span className="flex-shrink-0">{item.icon}</span>
+                    {!collapsed && <span className="ml-3">{item.name}</span>}
+                  </Link>
+                </TooltipTrigger>
+                {collapsed && (
+                  <TooltipContent side="right">{item.name}</TooltipContent>
+                )}
+              </Tooltip>
+            );
+          })}
+        </nav>
+      </div>
+      <div className="p-4 border-t border-cyber-primary/20">
+        <Tooltip delayDuration={collapsed ? 100 : 1000}>
+          <TooltipTrigger asChild>
             <Link
-              key={item.path}
-              to={item.path}
+              to="/profile"
               className={cn(
-                "flex items-center px-3 py-3 text-sm rounded-md transition-colors",
-                currentPath === item.path
-                  ? "bg-cyber-primary text-white"
-                  : "text-cyber-muted hover:bg-cyber-primary/10 hover:text-white",
+                "flex items-center px-3 py-2 rounded-md transition-colors text-cyber-muted hover:bg-cyber-primary/5 hover:text-white",
                 collapsed && "justify-center"
               )}
             >
-              <item.icon
-                className={cn(
-                  "flex-shrink-0",
-                  collapsed ? "h-6 w-6" : "h-5 w-5 mr-3"
-                )}
-              />
-              {!collapsed && <span>{item.title}</span>}
+              <div className="h-8 w-8 rounded-full bg-cyber-primary/20 flex items-center justify-center text-white">
+                RKS
+              </div>
+              {!collapsed && (
+                <div className="ml-3 text-left">
+                  <div className="font-medium">Officer Profile</div>
+                  <div className="text-xs text-cyber-muted">View or edit profile</div>
+                </div>
+              )}
             </Link>
-          ))}
-        </nav>
-      </div>
-      
-      <div className="p-4 border-t border-cyber-primary/20">
-        <div className={cn(
-          "flex items-center",
-          collapsed ? "justify-center" : "justify-between"
-        )}>
-          <div className="w-2 h-2 bg-green-500 rounded-full relative">
-            <div className="w-2 h-2 bg-green-500 rounded-full absolute animate-ping" />
-          </div>
-          {!collapsed && (
-            <div className="flex items-center gap-2">
-              <Link to="/profile" className="text-xs text-cyber-muted hover:text-white transition-colors">
-                {officerName} • Online
-              </Link>
-              <ThemeToggle />
-            </div>
-          )}
+          </TooltipTrigger>
           {collapsed && (
-            <div className="mt-4">
-              <ThemeToggle />
-            </div>
+            <TooltipContent side="right">
+              <div>Officer Profile</div>
+              <div className="text-xs">View or edit profile</div>
+            </TooltipContent>
           )}
-        </div>
+        </Tooltip>
       </div>
     </div>
   );
