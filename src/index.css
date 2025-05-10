@@ -1,5 +1,3 @@
-
-
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -89,6 +87,10 @@
   }
   body {
     @apply bg-background text-foreground;
+    scroll-behavior: smooth;
+  }
+  html {
+    scroll-behavior: smooth;
   }
 }
 
@@ -175,3 +177,11 @@
   }
 }
 
+/* Scroll styles */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+.scroll-section {
+  scroll-margin-top: 80px;
+}
