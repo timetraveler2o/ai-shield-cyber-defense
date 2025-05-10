@@ -28,6 +28,8 @@ const App: React.FC = () => {
   // Initialize local storage when app loads
   useEffect(() => {
     initLocalStorage();
+    // Set page title
+    document.title = "CyberSuraksha Kavach | Chandigarh Police";
   }, []);
 
   return (
