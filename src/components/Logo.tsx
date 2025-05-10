@@ -14,7 +14,7 @@ export function Logo({ className, showText = true, size }: LogoProps) {
     <div className={cn("flex items-center gap-2", className)}>
       <div className="relative">
         <img 
-          src="/lovable-uploads/eef2163b-cbfd-41b1-89f8-a21d9918ef23.png" 
+          src="/lovable-uploads/acde5342-ae27-44d7-a0be-056e23898187.png" 
           alt="CyberSuraksha Kavach Logo" 
           width={logoSize} 
           height={logoSize}
