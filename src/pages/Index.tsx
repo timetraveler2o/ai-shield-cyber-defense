@@ -6,6 +6,7 @@ import { Header } from "@/components/Header";
 import { StatisticsChart } from "@/components/StatisticsChart";
 import { StatusCard } from "@/components/StatusCard";
 import { ImprovedThreatMap } from "@/components/ImprovedThreatMap";
+import { useTheme } from "@/components/theme/theme-provider";
 
 const threatStats = [
   { name: "Phishing", value: 342, fill: "#0c5cab" },
@@ -26,12 +27,14 @@ const regionData = [
 ];
 
 export default function Index() {
+  const { theme } = useTheme();
+  
   return (
-    <div className="flex h-screen bg-cyber-background overflow-hidden fbi-seal-bg">
+    <div className={`flex h-screen overflow-hidden ${theme === 'light' ? 'light-gradient-bg' : 'bg-cyber-background fbi-seal-bg'}`}>
       <AppSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
-        <main className="flex-1 overflow-y-auto p-6 bg-cyber-background">
+        <main className={`flex-1 overflow-y-auto p-6 ${theme === 'light' ? 'bg-transparent' : 'bg-cyber-background'}`}>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <StatusCard
               title="Total Threats Detected"
@@ -76,6 +79,14 @@ export default function Index() {
           </div>
         </main>
       </div>
+      
+      {theme === 'light' && (
+        <>
+          <div className="floating-element floating-element-1"></div>
+          <div className="floating-element floating-element-2"></div>
+          <div className="floating-element floating-element-3"></div>
+        </>
+      )}
     </div>
   );
 }

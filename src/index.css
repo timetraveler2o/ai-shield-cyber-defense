@@ -7,35 +7,44 @@
 
 @layer base {
   :root {
-    --background: 220 20% 12%;
-    --foreground: 210 40% 98%;
+    --background: 210 40% 98%;
+    --foreground: 224 22% 8%;
 
-    --card: 224 22% 8%;
-    --card-foreground: 210 40% 98%;
+    --card: 0 0% 100%;
+    --card-foreground: 224 22% 8%;
 
-    --popover: 220 20% 12%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 224 22% 8%;
 
     --primary: 210 100% 35%;
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 215 27.9% 16.9%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 215 27.9% 80%;
+    --secondary-foreground: 215 27.9% 16.9%;
 
-    --muted: 215 27.9% 16.9%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 215 27.9% 90%;
+    --muted-foreground: 215 25% 40%;
 
     --accent: 210 100% 40%;
     --accent-foreground: 0 0% 100%;
 
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 210 40% 98%;
 
-    --border: 215 27.9% 16.9%;
-    --input: 215 27.9% 16.9%;
-    --ring: 212.7 26.8% 83.9%;
+    --border: 215 27.9% 80%;
+    --input: 215 27.9% 80%;
+    --ring: 210 100% 35%;
 
     --radius: 0.5rem;
+    
+    --sidebar-background: 210 40% 95%;
+    --sidebar-foreground: 224 22% 8%;
+    --sidebar-primary: 210 100% 35%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 215 27.9% 80%;
+    --sidebar-accent-foreground: 224 22% 8%;
+    --sidebar-border: 215 27.9% 80%;
+    --sidebar-ring: 210 100% 35%;
   }
 
   .dark {
@@ -87,37 +96,110 @@
     @apply bg-background text-foreground;
   }
 
-  /* Light mode cyber styles */
-  .light .cyber-dark {
-    @apply bg-slate-50;
+  /* Light mode styles */
+  .light {
+    background: linear-gradient(90deg, rgba(235,245,255,1) 0%, rgba(240,249,255,1) 100%);
   }
-
+  
   .light .cyber-card {
-    @apply bg-white border-slate-200;
+    @apply bg-white/80 backdrop-blur-md border-slate-200 shadow-lg;
   }
 
   .light .text-cyber-muted {
     @apply text-slate-600;
   }
 
-  /* Fix circular dependency by directly using the color value */
   .light .bg-cyber-primary {
-    background-color: #0c5cab; /* FBI blue color */
+    @apply bg-blue-500;
   }
 
   .light .border-cyber-primary\/20 {
     @apply border-slate-300;
   }
 
-  /* Dark mode styles remain unchanged as they're already in the dark theme */
+  .light .bg-cyber-background {
+    background: linear-gradient(135deg, rgba(240,249,255,1) 0%, rgba(224,242,254,1) 100%);
+  }
+
+  .light .bg-cyber-dark {
+    @apply bg-white/60 backdrop-blur-md;
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes move-background {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.floating-element {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(10px);
+  z-index: -1;
+  animation: float 6s ease-in-out infinite, pulse 4s ease-in-out infinite;
+}
+
+.floating-element-1 {
+  width: 200px;
+  height: 200px;
+  background: rgba(30, 144, 255, 0.1);
+  top: 10%;
+  left: 10%;
+  animation-delay: 0s;
+}
+
+.floating-element-2 {
+  width: 300px;
+  height: 300px;
+  background: rgba(65, 105, 225, 0.08);
+  bottom: 10%;
+  right: 10%;
+  animation-delay: 1s;
+}
+
+.floating-element-3 {
+  width: 150px;
+  height: 150px;
+  background: rgba(100, 149, 237, 0.15);
+  top: 40%;
+  right: 20%;
+  animation-delay: 2s;
 }
 
 .data-line {
-  @apply h-[1px] bg-gradient-to-r from-transparent via-cyber-accent to-transparent opacity-30;
+  @apply h-[1px] bg-gradient-to-r from-transparent via-blue-400 to-transparent opacity-30;
 }
 
 .cyber-card {
-  @apply bg-cyber-dark border border-cyber-primary/20 rounded-md overflow-hidden;
+  @apply rounded-md overflow-hidden transition-all duration-300;
   box-shadow: 0 4px 20px rgba(12, 92, 171, 0.2);
 }
 
@@ -130,27 +212,15 @@
 }
 
 .cyber-highlight {
-  @apply bg-gradient-to-r from-cyber-primary to-cyber-secondary bg-clip-text text-transparent;
+  @apply bg-gradient-to-r from-blue-500 to-sky-400 bg-clip-text text-transparent;
 }
 
-/* FBI-inspired styles */
-.fbi-seal-bg {
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' fill='%230c5cab10'%3E%3Ccircle cx='50' cy='50' r='48' stroke='%230c5cab08' stroke-width='2' fill='none'/%3E%3Ctext x='50' y='54' font-family='Arial' font-size='5' fill='%230c5cab08' text-anchor='middle'%3EFEDERAL BUREAU OF INVESTIGATION%3C/text%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: 300px;
+.light-gradient-bg {
+  background: linear-gradient(135deg, rgba(240,249,255,1) 0%, rgba(224,242,254,1) 100%);
+  background-size: 200% 200%;
+  animation: move-background 15s ease infinite;
 }
 
-.fbi-stripe {
-  position: relative;
-}
-
-.fbi-stripe:after {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 4px;
-  background: linear-gradient(90deg, #0c5cab, #1a365d);
+.glass-card {
+  @apply bg-white/20 backdrop-blur-md border border-white/30 shadow-lg rounded-lg;
 }

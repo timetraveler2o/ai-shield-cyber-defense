@@ -29,7 +29,7 @@ const App: React.FC = () => {
   }, []);
 
   return (
-    <ThemeProvider defaultTheme="dark">
+    <ThemeProvider defaultTheme="light">
       <QueryClientProvider client={queryClient}>
         <BrowserRouter>
           <TooltipProvider>

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { useTheme } from "@/components/theme/theme-provider";
 import {
   getOfficerProfile,
   saveOfficerProfile,
@@ -15,6 +16,7 @@ import {
 
 export function Profile() {
   const { toast } = useToast();
+  const { theme } = useTheme();
   const [name, setName] = useState("");
   const [badgeId, setBadgeId] = useState("");
   const [email, setEmail] = useState("");
@@ -60,10 +62,15 @@ export function Profile() {
   };
 
   return (
-    <div className="container mx-auto p-8">
-      <Card className="max-w-2xl mx-auto bg-card border-border">
+    <div className={`min-h-screen w-full light-gradient-bg p-8 relative overflow-hidden`}>
+      {/* Floating animated elements in background */}
+      <div className="floating-element floating-element-1"></div>
+      <div className="floating-element floating-element-2"></div>
+      <div className="floating-element floating-element-3"></div>
+      
+      <Card className="max-w-2xl mx-auto glass-card">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-2xl font-bold">
+          <CardTitle className="text-2xl font-bold cyber-highlight">
             <User className="mr-2 h-5 w-5 inline-block align-middle" />
             Officer Profile
           </CardTitle>
@@ -78,6 +85,7 @@ export function Profile() {
                 placeholder="Your Name"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
+                className="bg-white/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
@@ -87,6 +95,7 @@ export function Profile() {
                 placeholder="Badge Number"
                 value={badgeId}
                 onChange={(e) => setBadgeId(e.target.value)}
+                className="bg-white/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
@@ -96,6 +105,7 @@ export function Profile() {
                 placeholder="Department"
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
+                className="bg-white/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
@@ -105,6 +115,7 @@ export function Profile() {
                 placeholder="Location"
                 value={location}
                 onChange={(e) => setLocation(e.target.value)}
+                className="bg-white/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
@@ -115,6 +126,7 @@ export function Profile() {
                 placeholder="Email Address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
+                className="bg-white/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2">
@@ -124,6 +136,7 @@ export function Profile() {
                 placeholder="Phone Number"
                 value={phone}
                 onChange={(e) => setPhone(e.target.value)}
+                className="bg-white/50 backdrop-blur-sm"
               />
             </div>
             <div className="space-y-2 flex items-center justify-between">
@@ -143,7 +156,10 @@ export function Profile() {
               />
             </div>
           </div>
-          <Button onClick={handleSaveProfile} className="w-full bg-primary hover:bg-primary/80">
+          <Button 
+            onClick={handleSaveProfile} 
+            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+          >
             Save Profile
           </Button>
         </CardContent>
