@@ -1,68 +1,96 @@
-.# Welcome to your Ai Surakhsa Kavach (Ai Security Shield) project
 
-## Project info
+# AI Surakhsa Kavach (AI Security Shield)
 
-## How can I edit this code?
+![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
+![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
 
-There are several ways of editing your application.
+A comprehensive cybersecurity platform designed to protect Indian law enforcement and citizens from emerging digital threats.
 
-**Use your preferred IDE**
+![Dashboard Preview](https://github.com/user-attachments/assets/50e2b5d3-1a94-40f0-852c-ab3381906350)
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Visualstudio code.
+## 🛡️ Overview
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+AI Surakhsa Kavach (AI Security Shield) is an advanced cybersecurity solution that integrates multiple threat detection techniques with artificial intelligence to combat modern digital crimes. The platform provides tools for phishing detection, fraud analysis, ransomware simulation, VoIP monitoring, deepfake detection, and more.
 
-Follow these steps:
+## 🔍 Key Features
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
+- **Phishing Detection**: Analyze suspicious emails, links and websites
+- **Fraud Detection**: Identify fraudulent transactions and UPI IDs
+- **Ransomware Simulation**: Educational simulations to understand ransomware behavior
+- **VoIP Analysis**: Monitor and analyze VoIP communications
+- **Deepfake Detection**: Advanced AI to detect manipulated media
+- **Crime Reporting**: Digital platform for reporting cybercrimes
+- **Legal Assistant**: AI-powered legal guidance for cybercrime cases
+
+## 📷 Screenshots
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/d74479fe-a8eb-411b-9794-ad5d04ba8f55" alt="Phishing Detection" width="400"/>
+  <img src="https://github.com/user-attachments/assets/b526db44-6319-4846-9a41-950e58693667" alt="Fraud Detection" width="400"/>
+</div>
+
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/5343b46b-c1d6-4998-aca4-b19939d56096" alt="Ransomware Simulation" width="400"/>
+  <img src="https://github.com/user-attachments/assets/c02866a0-e4c6-45c8-9327-a95fc3d4dff8" alt="VoIP Analysis" width="400"/>
+</div>
+
+## 🚀 Technologies Used
+
+- **Frontend**: React, TypeScript, Tailwind CSS, shadcn/ui
+- **State Management**: TanStack Query
+- **Build Tool**: Vite
+- **UI Components**: Custom React components with a cybersecurity theme
+- **Data Visualization**: Recharts
+
+## 💻 Installation & Setup
+
+```bash
+# Clone the repository
 git clone <YOUR_GIT_URL>
 
-# Step 2: Navigate to the project directory.
+# Navigate to the project directory
 cd <YOUR_PROJECT_NAME>
 
-# Step 3: Install the necessary dependencies.
-npm i
+# Install dependencies
+npm install
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the development server
 npm run dev
 ```
-screenshot of Project :- ![image](https://github.com/user-attachments/assets/89b503f2-924f-4ba4-a530-c5a584fdea63)
-![image](https://github.com/user-attachments/assets/d74479fe-a8eb-411b-9794-ad5d04ba8f55) , ![image](https://github.com/user-attachments/assets/b526db44-6319-4846-9a41-950e58693667) ![image](https://github.com/user-attachments/assets/5343b46b-c1d6-4998-aca4-b19939d56096)
-![image](https://github.com/user-attachments/assets/50e2b5d3-1a94-40f0-852c-ab3381906350)  ![image](https://github.com/user-attachments/assets/c02866a0-e4c6-45c8-9327-a95fc3d4dff8)  ![image](https://github.com/user-attachments/assets/09c8f71d-1ce5-442b-8bb4-b3eb64414009) ![image](https://github.com/user-attachments/assets/b168e592-e531-431b-8583-f6c50879fd35) ![image](https://github.com/user-attachments/assets/4bc951cf-4952-452a-b69f-a0ce1208ebfa) ![image](https://github.com/user-attachments/assets/7942a1c7-244c-49e2-804b-c6a68c4fd3ae) ![image](https://github.com/user-attachments/assets/0d1eb67b-25ff-4db6-93f9-ff166fe54e20) ![image](https://github.com/user-attachments/assets/934d25dc-b468-42cb-af51-faa9fb3e2d42) ![image](https://github.com/user-attachments/assets/22376b5c-7925-4d36-b065-fd1a6b6c7b1e)
-![image](https://github.com/user-attachments/assets/425f02c0-c8b1-48ba-a0f5-cd9fdddd1c2c) ![image](https://github.com/user-attachments/assets/88fb31f5-4409-4d7e-9ec6-a6d05712a60c) ![image](https://github.com/user-attachments/assets/6053fd9b-86d4-4750-8c5a-012899992041) ![image](https://github.com/user-attachments/assets/d4e4b674-1ca0-4fed-bcb0-84cb108f1b93) ![image](https://github.com/user-attachments/assets/226396dd-9c36-4437-ad6a-0f718e8b23c7)
 
+## 🧪 Development
 
-**Edit a file directly in GitHub**
+For local development:
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```bash
+# Run the development server
+npm run dev
 
-**Use GitHub Codespaces**
+# Build for production
+npm run build
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+# Preview production build
+npm run preview
+```
 
-## What technologies are used for this project?
+## 🌐 Deployment
 
-This project is built with:
+This project can be easily deployed to various hosting platforms:
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+1. Build the project: `npm run build`
+2. Deploy the contents of the `dist` folder to your hosting provider
 
-## How can I deploy this project?
+## 📝 Contributing
 
-Simply open github and click on Share -> Publish.
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## Can I connect a custom domain to my project?
+## 📄 License
 
-Yes, you can!
+This project is licensed under the MIT License - see the LICENSE file for details.
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+## 🌟 Acknowledgments
+
+- Built with [Vite](https://vitejs.dev/)
+- UI components by [shadcn/ui](https://ui.shadcn.com/)
+- Icons by [Lucide](https://lucide.dev/)
+
