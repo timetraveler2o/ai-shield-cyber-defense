@@ -1,5 +1,5 @@
 
-import { User, Settings, Shield, LogOut, Bell, Mail, UserPlus, AlertTriangle, CheckCircle, Clock, Calendar, Briefcase, MapPin, Phone, AtSign, Badge } from "lucide-react";
+import { User, Settings, Shield, LogOut, Bell, Mail, UserPlus, AlertTriangle, CheckCircle, Clock, Calendar, Briefcase, MapPin, Phone, AtSign, Badge, ArrowLeft } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { useTheme } from "@/components/theme/theme-provider";
+import { useNavigate } from "react-router-dom";
 import {
   getOfficerProfile,
   saveOfficerProfile,
@@ -17,6 +18,7 @@ import {
 export function Profile() {
   const { toast } = useToast();
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [name, setName] = useState("");
   const [badgeId, setBadgeId] = useState("");
   const [email, setEmail] = useState("");
@@ -70,10 +72,21 @@ export function Profile() {
       
       <Card className="max-w-2xl mx-auto glass-card">
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-2xl font-bold cyber-highlight">
-            <User className="mr-2 h-5 w-5 inline-block align-middle" />
-            Officer Profile
-          </CardTitle>
+          <div className="flex items-center">
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => navigate(-1)}
+              className="mr-2 hover:bg-blue-100/50"
+            >
+              <ArrowLeft className="h-5 w-5" />
+              <span className="sr-only">Back</span>
+            </Button>
+            <CardTitle className="text-2xl font-bold cyber-highlight">
+              <User className="mr-2 h-5 w-5 inline-block align-middle" />
+              Officer Profile
+            </CardTitle>
+          </div>
           <ThemeToggle />
         </CardHeader>
         <CardContent className="space-y-4">
@@ -156,12 +169,22 @@ export function Profile() {
               />
             </div>
           </div>
-          <Button 
-            onClick={handleSaveProfile} 
-            className="w-full bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
-          >
-            Save Profile
-          </Button>
+          <div className="flex space-x-2">
+            <Button 
+              onClick={() => navigate(-1)} 
+              variant="outline"
+              className="flex-1 bg-white/50 backdrop-blur-sm border border-white/30 hover:bg-blue-100/50"
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
+            <Button 
+              onClick={handleSaveProfile} 
+              className="flex-1 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white"
+            >
+              Save Profile
+            </Button>
+          </div>
         </CardContent>
       </Card>
     </div>
