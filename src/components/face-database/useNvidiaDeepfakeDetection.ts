@@ -56,6 +56,9 @@ export function useNvidiaDeepfakeDetection() {
       result.imageUrl = imageUrl;
       result.analysisId = uuidv4();
       
+      // Ensure we're only detecting one face
+      result.detectedFaceCount = 1;
+      
       // Save result to local storage
       saveDeepfakeResult(result);
       
@@ -103,10 +106,13 @@ export function useNvidiaDeepfakeDetection() {
     };
     
     const payload = {
-      'input': [`data:image/png;base64,${base64Image}`]
+      'input': [`data:image/png;base64,${base64Image}`],
+      'options': {
+        'max_faces': 1  // Limit to only detect one face
+      }
     };
     
-    console.log("Sending request to NVIDIA API...");
+    console.log("Sending request to NVIDIA API with single face detection...");
     
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000); // 15 second timeout
@@ -142,7 +148,7 @@ export function useNvidiaDeepfakeDetection() {
         confidence: data.confidence || 0.7,
         analysisTimestamp: new Date().toISOString(),
         imageUrl: '',
-        detectedFaceCount: data.detected_face_count || 1,
+        detectedFaceCount: 1, // Always set to 1
         metadata: {
           generationMethod: isDeepfake ? data.generation_method || 'AI Generated' : 'None',
           manipulationScore: score,
@@ -157,9 +163,9 @@ export function useNvidiaDeepfakeDetection() {
   };
 
   const simulateDetection = async (base64Image: string): Promise<DeepfakeAnalysisResult> => {
-    console.log("Using simulated deepfake detection...");
+    console.log("Using simulated deepfake detection for single face...");
     
-    // Add a more sophisticated simulation based on image analysis
+    // Simplified simulation for a single face
     setAnalysisProgress(60);
     
     // Simulate processing delay
@@ -178,11 +184,6 @@ export function useNvidiaDeepfakeDetection() {
     const adjustedScore = normalizedScore * 0.7; // Bias toward lower scores (authentic)
     const isDeepfake = adjustedScore > 0.5;
     
-    // Count actual faces in image data by analyzing the base64 string patterns
-    // This is a simple heuristic and not accurate face detection
-    // In real implementation, use actual face detection API
-    const faceCount = Math.max(1, Math.round(base64Image.length / 500000));
-    
     await new Promise(resolve => setTimeout(resolve, 1000));
     setAnalysisProgress(90);
     
@@ -192,14 +193,14 @@ export function useNvidiaDeepfakeDetection() {
       confidence: 0.6 + (Math.random() * 0.3), // Between 0.6 and 0.9
       analysisTimestamp: new Date().toISOString(),
       imageUrl: '',
-      detectedFaceCount: faceCount,
+      detectedFaceCount: 1, // Always set to 1 face
       metadata: {
         generationMethod: isDeepfake ? 'GAN/Diffusion' : 'None',
         manipulationScore: adjustedScore,
         detectedArtifacts: isDeepfake 
           ? ['facial inconsistencies', 'unnatural textures', 'lighting anomalies'].slice(0, Math.floor(Math.random() * 3) + 1) 
           : [],
-        faceInconsistencies: isDeepfake ? Math.floor(Math.random() * 3) + 1 : 0
+        faceInconsistencies: isDeepfake ? 1 : 0 // Only one face, so max 1 inconsistency
       }
     };
   };

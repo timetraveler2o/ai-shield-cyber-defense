@@ -75,7 +75,7 @@ export function FaceDetectionPreview({
     }
   };
 
-  // Draw face boxes on canvas
+  // Draw face boxes on canvas - modified to show only one face
   useEffect(() => {
     if (!canvasRef.current || !mediaRef.current || dimensions.width === 0) return;
 
@@ -88,6 +88,12 @@ export function FaceDetectionPreview({
     
     // Clear previous drawings
     ctx.clearRect(0, 0, canvas.width, canvas.height);
+    
+    // If no faces are detected, return early
+    if (detectedFaces.length === 0) return;
+    
+    // Only use the first face (most prominent)
+    const face = detectedFaces[0];
     
     // Calculate scale factor between natural dimensions and displayed dimensions
     let scaleX, scaleY;
@@ -102,53 +108,50 @@ export function FaceDetectionPreview({
       scaleY = dimensions.height / imageElement.naturalHeight;
     }
     
-    // Draw boxes for each detected face
-    for (const face of detectedFaces) {
-      // Scale coordinates to match displayed size
-      const x = face.x * scaleX;
-      const y = face.y * scaleY;
-      const width = face.width * scaleX;
-      const height = face.height * scaleY;
+    // Scale coordinates to match displayed size
+    const x = face.x * scaleX;
+    const y = face.y * scaleY;
+    const width = face.width * scaleX;
+    const height = face.height * scaleY;
+    
+    // Determine box color based on gender
+    let boxColor = '#00ff00'; // default green
+    if (face.gender === 'male') {
+      boxColor = '#2196F3'; // blue for male
+    } else if (face.gender === 'female') {
+      boxColor = '#E91E63'; // pink for female
+    }
+    
+    // Draw rectangle with gender-specific color
+    ctx.strokeStyle = boxColor;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(x, y, width, height);
+    
+    // Add demographic information
+    if (face.gender || face.age) {
+      // Create background for text
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(x, y + height, width, 20);
       
-      // Determine box color based on gender
-      let boxColor = '#00ff00'; // default green
-      if (face.gender === 'male') {
-        boxColor = '#2196F3'; // blue for male
-      } else if (face.gender === 'female') {
-        boxColor = '#E91E63'; // pink for female
-      }
+      // Add gender and age text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'center';
+      const label = `${face.gender || '?'}, ~${face.age || '?'}`;
+      ctx.fillText(label, x + width / 2, y + height + 14);
       
-      // Draw rectangle with gender-specific color
-      ctx.strokeStyle = boxColor;
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, width, height);
-      
-      // Add demographic information
-      if (face.gender || face.age) {
-        // Create background for text
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(x, y + height, width, 20);
+      // Add potential warning text for suspicious expressions
+      if (face.expressions) {
+        const expressions = face.expressions;
+        const angryScore = expressions.angry || 0;
+        const fearfulScore = expressions.fearful || 0;
         
-        // Add gender and age text
-        ctx.fillStyle = '#ffffff';
-        ctx.font = '12px Arial';
-        ctx.textAlign = 'center';
-        const label = `${face.gender || '?'}, ~${face.age || '?'}`;
-        ctx.fillText(label, x + width / 2, y + height + 14);
-        
-        // Add potential warning text for suspicious expressions
-        if (face.expressions) {
-          const expressions = face.expressions;
-          const angryScore = expressions.angry || 0;
-          const fearfulScore = expressions.fearful || 0;
+        if (angryScore > 0.5 || fearfulScore > 0.5) {
+          ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
+          ctx.fillRect(x, y - 20, width, 20);
           
-          if (angryScore > 0.5 || fearfulScore > 0.5) {
-            ctx.fillStyle = 'rgba(255, 0, 0, 0.7)';
-            ctx.fillRect(x, y - 20, width, 20);
-            
-            ctx.fillStyle = '#ffffff';
-            ctx.fillText('⚠️ Suspicious', x + width / 2, y - 7);
-          }
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText('⚠️ Suspicious', x + width / 2, y - 7);
         }
       }
     }
