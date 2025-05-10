@@ -1,16 +1,26 @@
 
-# AI Surakhsa Kavach (AI Security Shield)
+# AI Suraksha Kavach (AI Security Shield)
 
 ![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
 
 A comprehensive cybersecurity platform designed to protect Indian law enforcement and citizens from emerging digital threats.
 
-![Dashboard Preview](https://github.com/user-attachments/assets/50e2b5d3-1a94-40f0-852c-ab3381906350)
-
 ## 🛡️ Overview
 
-AI Surakhsa Kavach (AI Security Shield) is an advanced cybersecurity solution that integrates multiple threat detection techniques with artificial intelligence to combat modern digital crimes. The platform provides tools for phishing detection, fraud analysis, ransomware simulation, VoIP monitoring, deepfake detection, and more.
+AI Suraksha Kavach (AI Security Shield) is an advanced cybersecurity solution that integrates multiple threat detection techniques with artificial intelligence to combat modern digital crimes. The platform provides tools for phishing detection, fraud analysis, ransomware simulation, VoIP monitoring, deepfake detection, and more.
+
+![Dashboard Preview](https://github.com/user-attachments/assets/50e2b5d3-1a94-40f0-852c-ab3381906350)
+
+## 🚀 Demo Videos
+
+### Face Recognition System
+[![Face Recognition Demo](https://github.com/user-attachments/assets/d74479fe-a8eb-411b-9794-ad5d04ba8f55)](https://youtu.be/demo-link-here)
+> Our AI-powered face recognition system allows law enforcement to quickly identify persons of interest using advanced neural networks and machine learning algorithms.
+
+### UPI Fraud Detection
+[![UPI Fraud Detection](https://github.com/user-attachments/assets/b526db44-6319-4846-9a41-950e58693667)](https://youtu.be/demo-link-here)
+> Real-time monitoring and analysis of suspicious UPI transactions to prevent financial fraud.
 
 ## 🔍 Key Features
 
@@ -33,6 +43,21 @@ AI Surakhsa Kavach (AI Security Shield) is an advanced cybersecurity solution th
   <img src="https://github.com/user-attachments/assets/5343b46b-c1d6-4998-aca4-b19939d56096" alt="Ransomware Simulation" width="400"/>
   <img src="https://github.com/user-attachments/assets/c02866a0-e4c6-45c8-9327-a95fc3d4dff8" alt="VoIP Analysis" width="400"/>
 </div>
+
+## ⚙️ File Upload System
+
+Our platform features a robust file upload system for various cybersecurity tasks:
+
+### Face Database Upload
+![Face Upload System](https://github.com/user-attachments/assets/d74479fe-a8eb-411b-9794-ad5d04ba8f55)
+> The face recognition database allows officers to upload images for identity verification and criminal database matching with progressive upload indicators and real-time feedback.
+
+### Deepfake Detection Upload
+![Deepfake Detection](https://github.com/user-attachments/assets/5343b46b-c1d6-4998-aca4-b19939d56096)
+> Our deepfake detection system accepts video and image uploads to analyze for signs of AI manipulation, providing confidence scores and forensic analysis.
+
+### Document Analysis Upload
+> The system can ingest and analyze suspicious documents, PDFs, and files for potential malware, phishing attempts, or other security threats.
 
 ## 🚀 Technologies Used
 
@@ -93,4 +118,3 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 - Built with [Vite](https://vitejs.dev/)
 - UI components by [shadcn/ui](https://ui.shadcn.com/)
 - Icons by [Lucide](https://lucide.dev/)
-
