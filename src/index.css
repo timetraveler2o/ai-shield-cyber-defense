@@ -1,4 +1,5 @@
 
+
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100;200;300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700&display=swap');
 
 @tailwind base;
@@ -141,6 +142,24 @@
   animation-delay: -10s;
 }
 
+/* Responsive background for pages */
+.page-background {
+  @apply relative min-h-screen w-full overflow-hidden;
+}
+
+.page-background::before {
+  content: "";
+  @apply absolute inset-0 bg-gradient-to-br from-blue-50/50 to-indigo-50/50 dark:from-gray-900/50 dark:to-gray-800/50 -z-10;
+}
+
+.page-content {
+  @apply relative z-10 w-full max-w-7xl mx-auto p-4 sm:p-6;
+}
+
+.responsive-grid {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-6;
+}
+
 @keyframes float {
   0%, 100% {
     transform: translate(0, 0);
@@ -155,3 +174,4 @@
     transform: translate(-20px, -30px);
   }
 }
+
