@@ -64,14 +64,14 @@ export default {
 					ring: 'hsl(var(--sidebar-ring))'
 				},
 				cyber: {
-					primary: '#8B5CF6',
-					secondary: '#0FA0CE',
-					background: '#1A1F2C',
-					accent: '#9b87f5',
-					warning: '#ea384c',
-					dark: '#121621',
-					light: '#F1F1F1',
-					muted: '#8E9196'
+					primary: '#0c5cab', // FBI blue
+					secondary: '#1a365d', // Dark navy blue
+					background: '#1c2333', // Dark bluish background
+					accent: '#0074e4', // Bright accent blue
+					warning: '#c1272d', // FBI red
+					dark: '#141b2d', // Very dark blue
+					light: '#F1F1F1', // Light gray
+					muted: '#8E9196' // Muted text color
 				}
 			},
 			borderRadius: {

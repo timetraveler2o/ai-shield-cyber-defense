@@ -93,7 +93,7 @@ export function AppSidebar() {
   return (
     <div
       className={cn(
-        "h-screen bg-cyber-dark border-r border-cyber-primary/20 flex flex-col transition-all duration-300",
+        "h-screen bg-cyber-dark border-r border-cyber-primary/20 flex flex-col transition-all duration-300 relative fbi-stripe",
         collapsed ? "w-20" : "w-64"
       )}
     >
@@ -118,7 +118,7 @@ export function AppSidebar() {
               className={cn(
                 "flex items-center px-3 py-3 text-sm rounded-md transition-colors",
                 currentPath === item.path
-                  ? "bg-cyber-primary/20 text-white"
+                  ? "bg-cyber-primary text-white"
                   : "text-cyber-muted hover:bg-cyber-primary/10 hover:text-white",
                 collapsed && "justify-center"
               )}

@@ -8,26 +8,26 @@ import { StatusCard } from "@/components/StatusCard";
 import { ImprovedThreatMap } from "@/components/ImprovedThreatMap";
 
 const threatStats = [
-  { name: "Phishing", value: 342, fill: "#9b87f5" },
-  { name: "UPI Fraud", value: 189, fill: "#0FA0CE" },
-  { name: "SIM Swap", value: 87, fill: "#ea384c" },
-  { name: "Deepfake", value: 134, fill: "#8B5CF6" },
+  { name: "Phishing", value: 342, fill: "#0c5cab" },
+  { name: "UPI Fraud", value: 189, fill: "#1a365d" },
+  { name: "SIM Swap", value: 87, fill: "#c1272d" },
+  { name: "Deepfake", value: 134, fill: "#0074e4" },
   { name: "VoIP Scam", value: 256, fill: "#f97316" },
   { name: "Ransomware", value: 95, fill: "#8E9196" },
 ];
 
 const regionData = [
-  { name: "Delhi", value: 284, fill: "#9b87f5" },
-  { name: "Mumbai", value: 321, fill: "#0FA0CE" },
-  { name: "Bangalore", value: 176, fill: "#ea384c" },
-  { name: "Kolkata", value: 123, fill: "#8B5CF6" },
+  { name: "Delhi", value: 284, fill: "#0c5cab" },
+  { name: "Mumbai", value: 321, fill: "#1a365d" },
+  { name: "Bangalore", value: 176, fill: "#c1272d" },
+  { name: "Kolkata", value: 123, fill: "#0074e4" },
   { name: "Chennai", value: 189, fill: "#f97316" },
   { name: "Hyderabad", value: 215, fill: "#8E9196" },
 ];
 
 export default function Index() {
   return (
-    <div className="flex h-screen bg-cyber-background overflow-hidden">
+    <div className="flex h-screen bg-cyber-background overflow-hidden fbi-seal-bg">
       <AppSidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
